@@ -131,4 +131,21 @@ module utils
 
         end function multSu3
 
+        ! calculate trace of square complex matrix
+        function trace(U)
+            complex :: U(:,:)
+            INTEGER, dimension(2) :: dm(2)
+            INTEGER :: i
+            complex :: trace
+
+            trace = 0
+
+            dm = shape(U)
+            if (dm(1) == dm(2)) then
+                do i = 1, dm(1)
+                    trace = trace + U(i,i)
+                end do
+            endif
+        end function trace
+
 end module utils
