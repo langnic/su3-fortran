@@ -1,5 +1,5 @@
-module metropolis
-    use utils
+module mod_metropolis
+    use mod_utils
     implicit none
 
     contains
@@ -281,4 +281,4 @@ module metropolis
 
         end subroutine wilson
 
-end module metropolis
+end module mod_metropolis

@@ -1,4 +1,4 @@
-module utils
+module mod_utils
     implicit none
 
     contains
@@ -148,4 +148,4 @@ module utils
             endif
         end function trace
 
-end module utils
+end module mod_utils

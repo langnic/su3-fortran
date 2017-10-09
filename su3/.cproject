@@ -31,7 +31,7 @@
 								<option id="gnu.fortran.link.option.libs.717973940" name="Libraries (-l)" superClass="gnu.fortran.link.option.libs" useByScannerDiscovery="false" valueType="libs">
 									<listOptionValue builtIn="false" value="blas"/>
 								</option>
-								<option id="gnu.fortran.link.option.ldflags.1552321388" superClass="gnu.fortran.link.option.ldflags" useByScannerDiscovery="false" value="-fopenmp" valueType="string"/>
+								<option id="gnu.fortran.link.option.ldflags.1552321388" name="Linker flags" superClass="gnu.fortran.link.option.ldflags" useByScannerDiscovery="false" value="-fopenmp" valueType="string"/>
 								<inputType id="photran.managedbuild.tool.gnu.fortran.linker.input.1208921096" superClass="photran.managedbuild.tool.gnu.fortran.linker.input">
 									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
 									<additionalInput kind="additionalinput" paths="$(LIBS)"/>

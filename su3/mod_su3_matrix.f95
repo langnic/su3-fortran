@@ -1,4 +1,4 @@
-module su3_matrix_module
+module mod_su3_matrix
     implicit none
     private
 
@@ -45,4 +45,4 @@ contains
         return
     end subroutine
 
-end module su3_matrix_module
+end module mod_su3_matrix

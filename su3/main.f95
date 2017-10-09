@@ -1,8 +1,8 @@
 program main
-    use metropolis
-    use utils
-    use su3_matrix_module
-    use gauge_field_module
+    use mod_metropolis
+    use mod_utils
+    use mod_su3_matrix
+    use mod_gauge_field
     implicit none
 
 

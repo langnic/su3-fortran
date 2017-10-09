@@ -1,5 +1,5 @@
-module gauge_field_module
-    use su3_matrix_module
+module mod_gauge_field
+    use mod_su3_matrix
     implicit none
     private
     complex, allocatable :: tmp(:,:,:)[:]
@@ -53,4 +53,4 @@ contains
 
 
 
-end module gauge_field_module
+end module mod_gauge_field
