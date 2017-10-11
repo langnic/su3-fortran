@@ -2,8 +2,8 @@ program main
     !use mod_metropolis
     !use mod_utils
     !use mod_su3_matrix
+    use mod_su3_field_var
     use mod_gauge_field
-    use mod_gauge_field_component
     implicit none
 
 
@@ -11,7 +11,7 @@ program main
     !write(*,*) num_images()
     !write(*,*) this_image()
 
-    call u%initialize(32,32,32,32,.true.)
+    call u%initialize(4,4,4,4,.true.)
 
 
 
