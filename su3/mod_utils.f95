@@ -3,7 +3,7 @@ module mod_utils
 
     contains
 
-        ! generate random su(2) matrix close to unity
+        !! generate random su(2) matrix close to unity
         function get_small_su2(eps)
             complex, dimension(2,2) :: get_small_su2
             real, intent(in) :: eps
@@ -30,9 +30,9 @@ module mod_utils
 
         end function get_small_su2
 
-        ! generate random su(3) matrix close to unity
-        function get_small_su3(eps)
-            complex, dimension(3,3) :: get_small_su3
+        !! generate random su(3) matrix close to unity
+        function get_random_su3(eps)
+            complex, dimension(3,3) :: get_random_su3
             complex, dimension(2,2) :: rp, sp, tp
             complex, dimension(3,3) :: r, s, t
             real, intent(in) :: eps
@@ -56,15 +56,15 @@ module mod_utils
             t(:,1) = (/ 1, 0, 0 /)
             t(1,:) = (/ 1, 0, 0 /)
 
-            get_small_su3 = matmul(r, matmul(s, t)) ! TODO: replace with blas function
+            get_random_su3 = matmul(r, matmul(s, t)) ! TODO: replace with blas function
 
             !write(*,*) ' ', get_small_su3(1,:)
             !write(*,*) ' ', get_small_su3(2,:)
             !write(*,*) ' ', get_small_su3(3,:)
 
-        end function get_small_su3
+        end function get_random_su3
 
-        ! vector product
+        !! vector product
         pure function cross(a, b)
           complex, dimension(3) :: cross
           complex, dimension(3), INTENT(IN) :: a, b
@@ -75,7 +75,7 @@ module mod_utils
         end function cross
 
 
-        ! project complex square matrix to unitarity
+        !! project complex square matrix to unitarity
         subroutine unitarize(m)
             real :: scnrm2
             complex, dimension(3,3) :: m
@@ -107,7 +107,7 @@ module mod_utils
 
         end subroutine unitarize
 
-        ! multiply complex 3x3 matrix using blas
+        !! multiply complex 3x3 matrix using blas
         function multSu3(a, conjA, b, conjB)
 
             complex, intent(in), dimension(3,3) :: a, b
@@ -131,7 +131,7 @@ module mod_utils
 
         end function multSu3
 
-        ! calculate trace of square complex matrix
+        !! calculate trace of square complex matrix
         function trace(U)
             complex :: U(:,:)
             INTEGER, dimension(2) :: dm(2)
@@ -147,5 +147,11 @@ module mod_utils
                 end do
             endif
         end function trace
+
+        !! get the identity matrix
+        function id_su3()
+            complex, dimension(3,3) :: id_su3
+            id_su3 = reshape( (/ 1, 0, 0,  0, 1, 0,  0, 0, 1 /), (/ 3, 3 /) )
+        end function id_su3
 
 end module mod_utils

@@ -144,7 +144,7 @@ module mod_metropolis
 
             ! generate link updates
             do i = 1, size(updateTab(:,1,1))
-                updateTab(i,:,:) = get_small_su3(0.001)
+                updateTab(i,:,:) = get_random_su3(0.001)
             end do
 
             ! check int tabs

@@ -23,11 +23,11 @@
 							<tool id="photran.managedbuild.tool.gnu.c.compiler.exe.debug.1384895443" name="GCC C Compiler" superClass="photran.managedbuild.tool.gnu.c.compiler.exe.debug">
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.225136663" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
 							</tool>
-							<tool id="photran.managedbuild.tool.gnu.fortran.compiler.exe.debug.573954939" name="GNU Fortran Compiler" superClass="photran.managedbuild.tool.gnu.fortran.compiler.exe.debug">
-								<option id="gnu.fortran.compiler.option.misc.other.822582008" name="Other flags" superClass="gnu.fortran.compiler.option.misc.other" useByScannerDiscovery="false" value="-c -fmessage-length=0 -fcoarray=single -fopenmp" valueType="string"/>
+							<tool command="caf" id="photran.managedbuild.tool.gnu.fortran.compiler.exe.debug.573954939" name="GNU Fortran Compiler" superClass="photran.managedbuild.tool.gnu.fortran.compiler.exe.debug">
+								<option id="gnu.fortran.compiler.option.misc.other.822582008" name="Other flags" superClass="gnu.fortran.compiler.option.misc.other" useByScannerDiscovery="false" value="-c -fmessage-length=0 -fopenmp" valueType="string"/>
 								<inputType id="photran.managedbuild.tool.gnu.fortran.compiler.input.277114203" superClass="photran.managedbuild.tool.gnu.fortran.compiler.input"/>
 							</tool>
-							<tool id="photran.managedbuild.tool.gnu.fortran.linker.exe.debug.8323186" name="GNU Fortran Linker" superClass="photran.managedbuild.tool.gnu.fortran.linker.exe.debug">
+							<tool command="caf" id="photran.managedbuild.tool.gnu.fortran.linker.exe.debug.8323186" name="GNU Fortran Linker" superClass="photran.managedbuild.tool.gnu.fortran.linker.exe.debug">
 								<option id="gnu.fortran.link.option.libs.717973940" name="Libraries (-l)" superClass="gnu.fortran.link.option.libs" useByScannerDiscovery="false" valueType="libs">
 									<listOptionValue builtIn="false" value="blas"/>
 								</option>
@@ -94,6 +94,14 @@
 		<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
 	</storageModule>
 	<storageModule moduleId="org.eclipse.cdt.core.LanguageSettingsProviders"/>
-	<storageModule moduleId="refreshScope"/>
+	<storageModule moduleId="refreshScope" versionNumber="2">
+		<configuration configurationName="Debug">
+			<resource resourceType="PROJECT" workspacePath="/su3"/>
+		</configuration>
+		<configuration configurationName="Release">
+			<resource resourceType="PROJECT" workspacePath="/su3"/>
+		</configuration>
+	</storageModule>
 	<storageModule moduleId="org.eclipse.cdt.make.core.buildtargets"/>
+	<storageModule moduleId="org.eclipse.cdt.internal.ui.text.commentOwnerProjectMappings"/>
 </cproject>
