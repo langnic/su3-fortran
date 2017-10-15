@@ -4,7 +4,7 @@ module mod_gauge_field
     use mod_utils
     implicit none
 
-    private
+    !private
     ! global data variable (for now: only one field instance allowed)
     complex, allocatable :: data(:,:,:)[:]
 
@@ -12,14 +12,14 @@ module mod_gauge_field
     !! does not contain any data
     type, public :: gauge_field
         !private
-    integer, pointer :: indices(:,:,:,:,:,:)        ! index/co-index array
+        integer, pointer :: indices(:,:,:,:,:,:)        ! index/co-index array
         integer, pointer :: coordinates(:,:,:)      ! TODO: maybe this is not needed at all...
         logical :: tmp  ! indicates whether the instance is a temporary variable
         integer :: dir  ! 0 means all directions
-        integer :: par  ! -1 means undefined parity
+        integer :: par  ! -1 indicates undefined parity
         integer :: x_low, x_up, y_low, y_up, z_low, z_up, t_low, t_up   ! boundaries for this image
     contains
-        procedure :: get => get_site
+        procedure :: get => get_element
         procedure :: copy_shift => copy_shift
         procedure :: initialize
         procedure :: add
@@ -41,18 +41,21 @@ contains
         !allocate(tmp(shp(1), shp(2), shp(3))[*], source=a%data+b%data)
     end function add
 
-    function get_site(self, i)
+    function get_element(self, i, j, k, l, d)
         class(gauge_field), intent(in) :: self
-        integer :: i
-        complex, dimension(:,:), allocatable :: get_site
+        integer :: i, j, k, l, d
+        complex, dimension(3,3) :: get_element
+        get_element = data(self%indices(l,k,j,i,d,0), :, :)[self%indices(l,k,j,i,d,1)]
     end function
 
 
-    function multiply(a, b) result (res)
+    !! compare dimensions and selected directions for two gauge_fields
+    !! return range of directions and step size for iteration
+    subroutine comp_dimensions(a, b, res, d_low, d_up, step_size)
         class(gauge_field), intent(in) :: a, b
-        type(loc_su3_field_var) :: res
-        integer :: i,j,k,l,d, idx
-        integer :: nx, ny, nz, nt, d_low, d_up, a_dir, b_dir
+        type(loc_su3_field_var), intent(inout) :: res
+        integer, intent(inout) :: d_low, d_up, step_size
+        integer :: nx, ny, nz, nt
 
         ! TODO: compare dimensions - error if different
         ! for now: assume all fields have same dimensions
@@ -72,49 +75,70 @@ contains
             error stop "Multiply: field dimensions don't match"
         end if
 
-        if (a%par >= 0) then
-            if (a%dir /= 0) then
+        if (a%par >= 0) then        ! defined parity
+            if (a%dir /= 0) then    ! defined direction
                 allocate(res%data(nx*ny*nz*nt/2,3,3))
                 d_low = 0
                 d_up = 0
-            else
+            else                    ! undefined direction -> iterate over all directions
                 allocate(res%data(nx*ny*nz*nt*2,3,3))
                 d_low = 1
                 d_up = 4
             end if
-        else
-            if (a%dir /= 0) then
+            step_size = 2
+        else                        ! undefined parity -> iterate over even AND odd sites
+            if (a%dir /= 0) then    ! defined direction
                 allocate(res%data(nx*ny*nz*nt,3,3))
                 d_low = 0
                 d_up = 0
-            else
+            else                    ! undefined direction -> iterate over all directions
                 allocate(res%data(nx*ny*nz*nt*4,3,3))
                 d_low = 1
                 d_up = 4
             end if
+            step_size = 1
         end if
 
-        !TODO: put the above in subroutine
+    end subroutine
+
+
+    !! multiply two gauge fields site by site
+    !! return loc_su3_field_var
+    function multiply(a, b) result (res)
+        class(gauge_field), intent(in) :: a, b
+        type(loc_su3_field_var) :: res
+        integer :: i,j,k,l,d, idx
+        integer :: d_low, d_up, da, db, la, lb, step_size
+
+        call comp_dimensions(a, b, res, d_low, d_up, step_size)
 
         idx = 1
-        do d = d_low, d_up
+        do d = d_low, d_up              ! directions
             do i = a%t_low, a%t_up              ! t
                 do j = a%z_low, a%z_up          ! z
                     do k = a%y_low, a%y_up                 ! y
-                        do l = a%x_low+1, a%x_up, 2        ! x  !FIXME: assumed parity!
+                        do l = a%x_low-1+step_size, a%x_up, step_size        ! x
                             if (d == 0) then
-                                a_dir = abs(a%dir)
-                                b_dir = abs(b%dir)
+                                da = abs(a%dir)
+                                db = abs(b%dir)
                             else
-                                a_dir = d
-                                b_dir = d
+                                da = d
+                                db = d
                             end if
+                            if (step_size == 2) then
+                                la = l-abs(mod(i+j+k,2)-a%par)
+                                lb = l-abs(mod(i+j+k,2)-b%par)
+                            else
+                                la = l
+                                lb = l
+                            end if
+
                             res%data(idx,:,:) = multSu3( &
-                            data( a%indices(l-abs(mod(i+j+k,2)-a%par),k,j,i,a_dir,0), :,:) &
-                            [a%indices(l-abs(mod(i+j+k,2)-a%par),k,j,i,a_dir,1)], &
+                            data( a%indices(la,k,j,i,da,0), :,:) &
+                            [a%indices(la,k,j,i,da,1)], &
                             (a%dir < 0), &
-                            data( b%indices(l-abs(mod(i+j+k,2)-b%par),k,j,i,b_dir,0), :,:) &
-                            [b%indices(l-abs(mod(i+j+k,2)-b%par),k,j,i,b_dir,1)], &
+                            data( b%indices(lb,k,j,i,db,0), :,:) &
+                            [b%indices(lb,k,j,i,db,1)], &
                             (b%dir < 0) )
                             idx = idx + 1
 

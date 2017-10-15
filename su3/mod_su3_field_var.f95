@@ -11,8 +11,9 @@ module mod_su3_field_var
 
     contains
         procedure :: add
+        procedure :: add_glob_loc
         procedure :: assign
-        generic :: operator (+) => add
+        generic :: operator (+) => add, add_glob_loc
         generic :: assignment (=) => assign
     end type su3_field_var
 
@@ -25,7 +26,8 @@ module mod_su3_field_var
         integer, allocatable :: indices(:,:,:,:)    ! might be unnecessary
     contains
         procedure :: add_loc
-        generic :: operator (+) => add_loc
+        procedure :: add_loc_glob
+        generic :: operator (+) => add_loc, add_loc_glob
     end type loc_su3_field_var
 
 contains
@@ -39,6 +41,28 @@ contains
         s = shape(a%data)
         allocate(res%data(s(1),s(2),s(3)), source=a%data+b%data)
     end function add
+
+    !! routine for adding loc_su3_field_var to su3_field_var
+    !! returns loc_su3_field_var
+    function add_glob_loc(a,b) result (res)
+        class(su3_field_var), intent(in) :: a
+        type(loc_su3_field_var), intent(in) :: b
+        type(loc_su3_field_var) :: res
+        integer :: s(3)
+        s = shape(a%data)
+        allocate(res%data(s(1),s(2),s(3)), source=a%data+b%data)
+    end function add_glob_loc
+
+    !! routine for adding loc_su3_field_var to su3_field_var
+    !! returns loc_su3_field_var
+    function add_loc_glob(a,b) result (res)
+        class(loc_su3_field_var), intent(in) :: a
+        type(su3_field_var), intent(in) :: b
+        type(loc_su3_field_var) :: res
+        integer :: s(3)
+        s = shape(a%data)
+        allocate(res%data(s(1),s(2),s(3)), source=a%data+b%data)
+    end function add_loc_glob
 
     !! add routine for local su3 field var
     !! returns loc_su3_field_var
@@ -55,7 +79,13 @@ contains
     subroutine assign(y, x)
         type(loc_su3_field_var), intent(in) :: x
         class(su3_field_var), intent(inout) :: y
+        integer :: s(3)
+        s = shape(x%data)
 
+        if (allocated(y%data)) then
+            deallocate(y%data)
+        end if
+        allocate(y%data(s(1), 3, 3)[*])
         y%data = x%data
         return
     end subroutine
