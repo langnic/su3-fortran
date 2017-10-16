@@ -133,6 +133,9 @@ contains
                                 lb = l
                             end if
 
+                            !print *, 'idx: ', a%indices(la,k,j,i,da,0)
+                            !print *, 'co-idx: ', a%indices(la,k,j,i,da,1)
+
                             res%data(idx,:,:) = multSu3( &
                             data( a%indices(la,k,j,i,da,0), :,:) &
                             [a%indices(la,k,j,i,da,1)], &
@@ -166,10 +169,10 @@ contains
         ! only deep-copy the index arrays if self is not a temporary
         if (.not. self%tmp) then
             if (shift_dim /= 0) then
-                allocate(c%indices(s(1), s(2), s(3), s(4), s(5), s(6)), &
+                allocate(c%indices(s(1), s(2), s(3), s(4), s(5), 0:1), &
                     source=cshift(self%indices, shift_length, shift_dim))
             else
-                allocate(c%indices(s(1), s(2), s(3), s(4), s(5), s(6)), source=self%indices)
+                allocate(c%indices(s(1), s(2), s(3), s(4), s(5), 0:1), source=self%indices)
                 allocate(c%coordinates(t(1), t(2), t(3)), source=self%coordinates)
             end if
         else if (shift_dim /= 0) then
