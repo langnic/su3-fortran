@@ -1,4 +1,12 @@
 \BOOKMARK [0][]{section*.1}{A quenched QCD lattice implementation using Fortran coarrays }{}% 1
 \BOOKMARK [0][]{section*.1}{Nicolas Lang}{}% 2
 \BOOKMARK [1][]{section.0.1}{Introduction}{section*.1}% 3
-\BOOKMARK [1][]{section.0.2}{QCD on the lattice}{section*.1}% 4
+\BOOKMARK [1][]{section.0.2}{QCD}{section*.1}% 4
+\BOOKMARK [2][]{subsection.0.2.1}{The path integral quantization}{section.0.2}% 5
+\BOOKMARK [2][]{subsection.0.2.2}{Discretization on the lattice}{section.0.2}% 6
+\BOOKMARK [2][]{subsection.0.2.3}{The QCD action}{section.0.2}% 7
+\BOOKMARK [1][]{section.0.3}{Fortran implementation}{section*.1}% 8
+\BOOKMARK [2][]{subsection.0.3.1}{Fortran coarrays}{section.0.3}% 9
+\BOOKMARK [2][]{subsection.0.3.2}{Design choices}{section.0.3}% 10
+\BOOKMARK [2][]{subsection.0.3.3}{Issues}{section.0.3}% 11
+\BOOKMARK [1][]{section.0.4}{Sample measurement}{section*.1}% 12

@@ -114,8 +114,33 @@
 \section{Introduction} \label{sect:introduction}
 
 
+\section{QCD}
 
-\section{QCD on the lattice}
+
+\subsection{The path integral quantization}
+
+\subsection{Discretization on the lattice}
+
+\subsection{The QCD action}
+
+
+
+% TODO: perhaps table with Fortran coarray routines?
+
+\section{Fortran implementation}
+
+This section discusses an implementation of the quenched approximation of QCD on the lattice using coarrays for data parallelism.
+
+\subsection{Fortran coarrays}
+
+Coarrays provide a way to distribute data accross multiple program instances while retaining a concise syntax that abstracts the underlying inter-process or network communication. Formerly an extension of Fortran 95, coarrays are now part of the Fortran 2008 standard. Coarrays are variables with one or several \emph{codimensions} and indices referencing data stored by another program instance, called \emph{image}. \emph{Images} represent copies of the program that run asynchronously and can possess further independent local variables. The coarray entries can be accessed from every image by specifying the respective \emph{coindex} representing the image, where the data is stored. The size of the codimension is determined at runtime from the number of running images. The standard provides for additional methods that enable the user to obtain the number of images and the index of the current image and to introduce a break point to synchronize images. The coarray support in the GNU Fortran compiler is based on the \emph{OpenCoarrays} \cite{opencoarrays} library which in turn is based on the Message Passing Interface (MPI).
+
+\subsection{Design choices}
+
+\subsection{Issues}
+
+
+\section{Sample measurement}
 
 
 
