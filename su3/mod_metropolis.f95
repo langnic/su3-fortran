@@ -1,287 +1,100 @@
 module mod_metropolis
     use mod_utils
+    use mod_gauge_field
+    use mod_real_field_var
+    use mod_interfaces
     implicit none
 
-    !! OLD STUFF!
-    !! IGNORE!
+    type(loc_su3_field_var), allocatable, private :: update_tab(:)
 
     contains
 
-        function staple(U, d, x, y, z, t)
-            COMPLEX, intent(in) :: U(:,:,:,:,:,:,:)
-            INTEGER, dimension(7) :: dm(7)
-            INTEGER, intent(in) :: d, x, y, z, t
-            INTEGER :: Nx, Ny, Nz, Nt, xp, xm, yp, ym, zp, zm, tp, tm;
-            complex, dimension(3,3) :: staple
+        !! calculate staple for parity p and link direction d
+        function staple(u, p, d)
+            type(gauge_field), intent(in) :: u
+            integer, intent(in) :: d, p
+            integer :: i, s
+            type(loc_su3_field_var) :: staple
 
-            dm = shape(U)
+            s = u%nx * u%ny * u%nz * u%nt / 2
 
-            Nx = dm(2)
-            Ny = dm(3)
-            Nz = dm(4)
-            Nt = dm(5)
-
-            xp = modulo(x, Nx)+1
-            xm = modulo(x-2, Nx)+1
-            yp = modulo(y, Ny)+1
-            ym = modulo(y-2, Ny)+1
-            zp = modulo(z, Nz)+1
-            zm = modulo(z-2, Nz)+1
-            tp = modulo(t, Nt)+1
-            tm = modulo(t-2, Nt)+1
-
-            select case (d)
-                case (1)
-                    staple = multSu3( U(2, x, y, z, t, :, :), .false., &
-                                multSu3( U(1, x, yp, z, t, :, :), .false., U(2, xp, y, z, t, :, :), .true. ), &
-                                .false.) &
-                           + multSu3( U(2, x, ym, z, t, :, :), .true., &
-                                multSu3( U(1, x, ym, z, t, :, :), .false., U(2, xp, ym, z, t, :, :), .false. ), &
-                                .false.) &
-                           + multSu3( U(3, x, y, z, t, :, :), .false., &
-                                multSu3( U(1, x, y, zp, t, :, :), .false., U(3, xp, y, z, t, :, :), .true. ), &
-                                .false.) &
-                           + multSu3( U(3, x, y, zm, t, :, :), .true., &
-                                multSu3( U(1, x, y, zm, t, :, :), .false., U(3, xp, y, zm, t, :, :), .false. ), &
-                                .false.) &
-                           + multSu3( U(4, x, y, z, t, :, :), .false., &
-                                multSu3( U(1, x, y, z, tp, :, :), .false., U(4, xp, y, z, t, :, :), .true. ), &
-                                .false.) &
-                           + multSu3( U(4, x, y, z, tm, :, :), .true., &
-                                multSu3( U(1, x, y, z, tm, :, :), .false., U(3, xp, y, z, tm, :, :), .false. ), &
-                                .false.)
-                case (2)
-                    staple = multSu3( U(1, x, y, z, t, :, :), .false., &
-                                multSu3( U(2, xp, y, z, t, :, :), .false., U(1, x, yp, z, t, :, :), .true. ), &
-                                .false.) &
-                           + multSu3( U(1, xm, y, z, t, :, :), .true., &
-                                multSu3( U(2, xm, y, z, t, :, :), .false., U(1, xm, yp, z, t, :, :), .false. ), &
-                                .false.) &
-                           + multSu3( U(3, x, y, z, t, :, :), .false., &
-                                multSu3( U(2, x, y, zp, t, :, :), .false., U(3, x, yp, z, t, :, :), .true. ), &
-                                .false.) &
-                           + multSu3( U(3, x, y, zm, t, :, :), .true., &
-                                multSu3( U(2, x, y, zm, t, :, :), .false., U(3, x, yp, zm, t, :, :), .false. ), &
-                                .false.) &
-                           + multSu3( U(4, x, y, z, t, :, :), .false., &
-                                multSu3( U(2, x, y, z, tp, :, :), .false., U(4, x, yp, z, t, :, :), .true. ), &
-                                .false.) &
-                           + multSu3( U(4, x, y, z, tm, :, :), .true., &
-                                multSu3( U(2, x, y, z, tm, :, :), .false., U(3, x, yp, z, tm, :, :), .false. ), &
-                                .false.)
-                case (3)
-                    staple = multSu3( U(1, x, y, z, t, :, :), .false., &
-                                multSu3( U(3, xp, y, z, t, :, :), .false., U(1, x, y, zp, t, :, :), .true. ), &
-                                .false.) &
-                           + multSu3( U(1, xm, y, z, t, :, :), .true., &
-                                multSu3( U(3, xm, y, z, t, :, :), .false., U(1, xm, y, zp, t, :, :), .false. ), &
-                                .false.) &
-                           + multSu3( U(2, x, y, z, t, :, :), .false., &
-                                multSu3( U(3, x, yp, z, t, :, :), .false., U(2, x, y, zp, t, :, :), .true. ), &
-                                .false.) &
-                           + multSu3( U(2, x, ym, z, t, :, :), .true., &
-                                multSu3( U(3, x, ym, z, t, :, :), .false., U(2, x, ym, zp, t, :, :), .false. ), &
-                                .false.) &
-                           + multSu3( U(4, x, y, z, t, :, :), .false., &
-                                multSu3( U(3, x, y, z, tp, :, :), .false., U(4, x, y, zp, t, :, :), .true. ), &
-                                .false.) &
-                           + multSu3( U(4, x, y, z, tm, :, :), .true., &
-                                multSu3( U(3, x, y, z, tm, :, :), .false., U(4, x, y, zp, tm, :, :), .false. ), &
-                                .false.)
-                case (4)
-                    staple = multSu3( U(1, x, y, z, t, :, :), .false., &
-                                multSu3( U(4, xp, y, z, t, :, :), .false., U(1, x, y, z, tp, :, :), .true. ), &
-                                .false.) &
-                           + multSu3( U(1, xm, y, z, t, :, :), .true., &
-                                multSu3( U(4, xm, y, z, t, :, :), .false., U(1, xm, y, z, tp, :, :), .false. ), &
-                                .false.) &
-                           + multSu3( U(2, x, y, z, t, :, :), .false., &
-                                multSu3( U(4, x, yp, z, t, :, :), .false., U(2, x, y, z, tp, :, :), .true. ), &
-                                .false.) &
-                           + multSu3( U(2, x, ym, z, t, :, :), .true., &
-                                multSu3( U(4, x, ym, z, t, :, :), .false., U(2, x, ym, z, tp, :, :), .false. ), &
-                                .false.) &
-                           + multSu3( U(3, x, y, z, t, :, :), .false., &
-                                multSu3( U(4, x, y, zp, t, :, :), .false., U(3, x, y, z, tp, :, :), .true. ), &
-                                .false.) &
-                           + multSu3( U(3, x, y, zm, t, :, :), .true., &
-                                multSu3( U(4, x, y, zm, t, :, :), .false., U(3, x, y, zm, tp, :, :), .false. ), &
-                                .false.)
-
-                case default
-                    write(*,*) 'Dimension out of range'
-            end select
+            call staple%init_zero(s)
+            do i = 1, 4
+                if (i /= d) then
+                    call staple%increment( &
+                        (u.sel.[p,i]) * (u.shift.[i,1].sel.[p,d]) * (u.shift.[d,1].sel.[p,-i]) &
+                        + (u.shift.[i,-1].sel.[p,-i]) * (u.shift.[i,-1].sel.[p,d]) * (u.shift.[i,-1].shift.[d,1].sel.[p,i]) &
+                        )
+                end if
+            end do
 
         end function staple
 
 
-        subroutine metro(U, acc, beta)
+        !! allocate and initialize the update tab
+        !! st: tab size, su: field_var size, eps: epsilon
+        subroutine init_update_tab(st, su, eps)
+            integer, intent(in) :: st, su
+            real, intent(in) :: eps
+            integer :: i
+            if (.not. allocated(update_tab)) then
+                allocate(update_tab(st))
+                do i = 1, st
+                    call update_tab(i)%init_rnd(su, eps)
+                end do
+            end if
+        end subroutine
 
-            COMPLEX, intent(inout) :: U(:,:,:,:,:,:,:)
-            INTEGER, dimension(5) :: dm(5)
-            INTEGER :: N, i, d, x, y, z, t
-            REAL, intent(inout) :: acc
-            REAL, intent(in) :: beta
-            REAL :: rnd, deltaS
-            complex, dimension(3,3) :: stp, oldLink, newLink, wloop
-            REAL, dimension(size(U(:,:,:,:,:,1,1))) :: rndTab
-            INTEGER, dimension(size(U(:,:,:,:,:,1,1))) :: dTab, xTab, yTab, zTab, tTab
-            COMPLEX, dimension(1000, 3, 3) :: updateTab
 
-            dm = shape(U(:,:,:,:,:,1,1))
-            N = size(U(:,:,:,:,:,1,1))   ! Nx*Ny*Nz*Nt*Nd
-            acc = 0
+        !! perform metropolis sweep
+        subroutine metro(u, eps, beta, acc)
+            type(gauge_field), intent(inout) :: u
+            real, intent(inout) :: acc
+            real, intent(in) :: eps, beta
+            type(loc_su3_field_var) :: stp, new_link
+            type(loc_real_field_var) :: delta_s, rnd_field
+            integer :: p, d, s, acc_count
+            real :: rnd1, rnd2
 
-            ! generate random integer tables for link access
-            call random_seed()
-            call random_number(rndTab)
-            dTab = floor( rndTab * dm(1) ) + 1
-            call random_number(rndTab)
-            xTab = floor( rndTab * dm(2) ) + 1
-            call random_number(rndTab)
-            yTab = floor( rndTab * dm(3) ) + 1
-            call random_number(rndTab)
-            zTab = floor( rndTab * dm(4) ) + 1
-            call random_number(rndTab)
-            tTab = floor( rndTab * dm(5) ) + 1
+            s = u%nx * u%ny * u%nz * u%nt / 2
+            acc_count = 0
 
             ! generate link updates
-            do i = 1, size(updateTab(:,1,1))
-                updateTab(i,:,:) = get_random_su3(0.001)
-            end do
+            call init_update_tab(100, s, eps)
 
-            ! check int tabs
-            !write(*,*) 'xTab(1:5): ', xTab(1:5)
-            !write(*,*) 'yTab(1:5): ', yTab(1:5)
+            ! iterate over both parities and all directions
+            do p = 1,2
+                do d = 1,4
 
-            do i = 1, N
-                d = dTab(i)
-                x = xTab(i)
-                y = yTab(i)
-                z = zTab(i)
-                t = tTab(i)
+                ! TODO: multi-hit
 
-                stp = staple(U, d, x, y, z, t)
-                oldLink = U(d,x,y,z,t,:,:)
+                ! get staple
+                stp = staple(u,p,d)
 
                 ! generate new link - multiply with compl. conj. update mtx. with equal probability
-                call random_number(rnd)
-                if (rnd >= 0.5) then
-                    newLink = multSu3(U(d,x,y,z,t,:,:), .false., updateTab(modulo(i, 1000)+1,:,:), .false.)
+                call random_number(rnd1)
+                call random_number(rnd2)
+                if (rnd1 >= 0.5) then
+                    update_tab(ceiling(rnd2*100))%conj = .true.     ! TODO: some kind of operator would be nicer for this
                 else
-                    newLink = multSu3(U(d,x,y,z,t,:,:), .false., updateTab(modulo(i, 1000)+1,:,:), .true.)
+                    update_tab(ceiling(rnd2*100))%conj = .false.
                 end if
+
+                new_link = (u.sel.[p,d]) * update_tab(ceiling(rnd2*100))
 
                 ! calculate action change
-                wloop = multSu3((newLink - oldLink), .false., stp, .false.)
-                deltaS = beta / 3.0 * REAL(wloop(1,1) + wloop(2,2) + wloop(3,3))
+                delta_s = beta / 3.0 * .rtrc.((new_link - (u.sel.[p,d])) * stp)
 
                 ! accept with some prob. dep. on action
-                call random_number(rnd)
-                if (rnd <= exp(-deltaS)) then
-                    U(d,x,y,z,t,:,:) = newLink
-                    acc = acc + 1
-                end if
+                call rnd_field%init_rnd(s)
+                call u%update(p, d, new_link, (rnd_field <= exp(-delta_s)), acc_count)
+                sync all
 
-            end do
-
-            acc = acc / N
-
-        end subroutine metro
-
-
-        subroutine wilson(U, spt, sps, sp)
-            COMPLEX, intent(in) :: U(:,:,:,:,:,:,:)
-            INTEGER, dimension(5) :: dm(5)
-            INTEGER :: x, y, z, t, Nx, Ny, Nz, Nt, xp, yp, zp, tp
-            REAL, dimension(6) :: plqs
-            REAL, dimension(size(U(1,1,1,1,:,1,1))), intent(out) :: spt, sps
-            REAL, intent(out) :: sp
-
-            dm = shape(U(:,:,:,:,:,1,1))
-
-            Nx = dm(2)
-            Ny = dm(3)
-            Nz = dm(4)
-            Nt = dm(5)
-
-            ! temporal and spatial plaquettes per time slice
-            spt = 0
-            sps = 0
-
-            ! average plaquette (t + s)
-            sp = 0
-
-            do t = 1, Nt
-                do x = 1, Nx
-                    do y = 1, Ny
-                        do z = 1, Nz
-                            xp = modulo(x, Nx)+1
-                            yp = modulo(y, Ny)+1
-                            zp = modulo(z, Nz)+1
-                            tp = modulo(t, Nt)+1
-
-                            plqs(1) = REAL(trace( &
-                                multSu3( U(1, x, y, z, t, :, :), .false., &
-                                multSu3( U(2, xp, y, z, t, :, :), .false., &
-                                multSu3( U(1, x, yp, z, t, :, :), .true., &
-                                U(2, x, y, z, t, :, :), .true.), &
-                                .false. ), .false.) &
-                                ))
-
-                            plqs(2) = REAL(trace( &
-                                multSu3( U(1, x, y, z, t, :, :), .false., &
-                                multSu3( U(3, xp, y, z, t, :, :), .false., &
-                                multSu3( U(1, x, y, zp, t, :, :), .true., &
-                                U(3, x, y, z, t, :, :), .true.), &
-                                .false. ), .false.) &
-                                ))
-
-                            plqs(3) = REAL(trace( &
-                                multSu3( U(1, x, y, z, t, :, :), .false., &
-                                multSu3( U(4, xp, y, z, t, :, :), .false., &
-                                multSu3( U(1, x, y, z, tp, :, :), .true., &
-                                U(4, x, y, z, t, :, :), .true.), &
-                                .false. ), .false.) &
-                                ))
-
-                            plqs(4) = REAL(trace( &
-                                multSu3( U(2, x, y, z, t, :, :), .false., &
-                                multSu3( U(3, x, yp, z, t, :, :), .false., &
-                                multSu3( U(2, x, y, zp, t, :, :), .true., &
-                                U(3, x, y, z, t, :, :), .true.), &
-                                .false. ), .false.) &
-                                ))
-
-                            plqs(5) = REAL(trace( &
-                                multSu3( U(2, x, y, z, t, :, :), .false., &
-                                multSu3( U(4, x, yp, z, t, :, :), .false., &
-                                multSu3( U(2, x, y, z, tp, :, :), .true., &
-                                U(4, x, y, z, t, :, :), .true.), &
-                                .false. ), .false.) &
-                                ))
-
-                            plqs(6) = REAL(trace( &
-                                multSu3( U(3, x, y, z, t, :, :), .false., &
-                                multSu3( U(4, x, y, zp, t, :, :), .false., &
-                                multSu3( U(3, x, y, z, tp, :, :), .true., &
-                                U(4, x, y, z, t, :, :), .true.), &
-                                .false. ), .false.) &
-                                ))
-
-                            sps(t) = sps(t) + 1.0/3.0 * (plqs(1) + plqs(2) + plqs(4))
-                            spt(t) = spt(t) + 1.0/3.0 * (plqs(3) + plqs(5) + plqs(6))
-                            sp = sp + 1.0/3.0 * (plqs(1) + plqs(2) + plqs(3) + plqs(4) + plqs(5) + plqs(6))
-
-                        end do
-                    end do
                 end do
             end do
 
-            sps = sps / (3 * Nx * Ny * Nz)
-            spt = spt / (3 * Nx * Ny * Nz)
-            sp = sp / (6 * Nx * Ny * Nz * Nt)
+            acc = real(acc_count) / real((s*8))
 
-        end subroutine wilson
+        end subroutine metro
 
 end module mod_metropolis
