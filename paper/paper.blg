@@ -1,0 +1,9 @@
+[0] Config.pm:354> INFO - This is Biber 2.7
+[0] Config.pm:357> INFO - Logfile is 'paper.blg'
+[25] biber:303> INFO - === Mi Okt 18, 2017, 21:31:17
+[39] Biber.pm:359> INFO - Reading 'paper.bcf'
+[103] Biber.pm:835> INFO - Found 0 citekeys in bib section 0
+[110] Utils.pm:164> WARN - The file 'paper.bcf' does not contain any citations!
+[115] bbl.pm:608> INFO - Writing 'paper.bbl' with encoding 'ascii'
+[115] bbl.pm:712> INFO - Output to paper.bbl
+[115] Biber.pm:109> INFO - WARNINGS: 1

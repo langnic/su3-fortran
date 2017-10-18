@@ -1,0 +1,126 @@
+
+% RECOMMENDED %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\documentclass[graybox]{svmult}
+
+% choose options for [] as required from the list
+% in the Reference Guide
+
+\usepackage{mathptmx}       % selects Times Roman as basic font
+\usepackage{helvet}         % selects Helvetica as sans-serif font
+\usepackage{courier}        % selects Courier as typewriter font
+\usepackage{type1cm}        % activate if the above 3 fonts are not available on your system
+\usepackage{makeidx}         % allows index generation
+\usepackage{graphicx}        % standard LaTeX graphics tool when including figure files
+\usepackage{multicol}        % used for the two-column index
+\usepackage[bottom]{footmisc}% places footnotes at page bottom
+%\usepackage{caption}
+\usepackage{subcaption}
+\captionsetup{compatibility=false}
+\usepackage{lineno}
+\usepackage{savefnmark}
+\usepackage{comment}
+\usepackage{amsmath}
+\usepackage{floatrow}
+
+\usepackage[
+    backend=biber,
+    style=authoryear-icomp,
+    sortlocale=de_DE,
+    natbib=true,
+    url=true, 
+    doi=true,
+    eprint=false,
+    hyperref=true,
+    maxnames=1,
+    maxalphanames=1,
+    maxcitenames=1,
+    language=english
+]{biblatex}
+\addbibresource{main.bib}
+
+\usepackage[
+	colorlinks=true,
+	linkcolor=black,
+	citecolor=black,
+	filecolor=black,
+	bookmarks=true,
+	bookmarksopen=true,
+	bookmarksopenlevel=3,
+	plainpages=false,
+	pdfpagelabels=true,
+	pdftitle={A quenched QCD lattice implementation using Fortran coarrays},
+	pdfauthor={Nicolas Lang},
+	pdfsubject={Lab report},
+	pdfkeywords={QCD, Lattice, Fortran, Coarrays}
+]{hyperref}
+
+\DefineBibliographyStrings{english}{andothers={et\ al\adddot}}
+%\DeclarePunctuationFormat[textcite]{nametitledelim}{\addspace}
+\DeclareFieldFormat{pages}{#1}
+\makeatletter
+\AtBeginDocument{
+  \apptocmd\@floatboxreset
+    {\let\blx@imc@ifciteseen\@firstoftwo}
+    {}
+    {\blx@err@patch{floats}}%
+}
+\makeatother
+
+\floatsetup[table]{capposition=top}
+
+
+\makeindex             % used for the subject index
+                       % please use the style svind.ist with
+                       % your makeindex program
+
+\newif\ifPrintNotes
+%\PrintNotesfalse to turn off printing of notes
+\PrintNotestrue
+\ifPrintNotes
+  \newcommand{\Nnote}[1]{\textcolor{green}{[Nico: #1]}}
+\else
+  \newcommand{\Nnote}[1]{\mbox{}}
+\fi
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{document}
+
+%\linenumbers
+
+\title*{A quenched QCD lattice implementation using Fortran coarrays\\ }
+\subtitle{Lab report}
+% Use \titlerunning{Short Title} for an abbreviated version of
+% your contribution title if the original one is too long
+\author{Nicolas Lang}
+
+% Use \authorrunning{Short Title} for an abbreviated version of
+% your contribution title if the original one is too long
+\institute{Bergische Universit\"at Wuppertal}
+%
+% Use the package "url.sty" to avoid
+% problems with special characters
+% used in your e-mail or web address
+%
+\maketitle
+
+
+\abstract{A fortran implementation of quenched QCD using coarrays is presented.}
+
+
+\section{Introduction} \label{sect:introduction}
+
+
+
+\section{QCD on the lattice}
+
+
+
+\pagebreak
+\printbibliography
+
+
+\end{document}
