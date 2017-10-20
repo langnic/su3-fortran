@@ -2,83 +2,30 @@ module mod_measure
     use mod_gauge_field
     use mod_su3_field_var
     use mod_real_field_var
+    use mod_interfaces
     implicit none
 
 
     contains
 
-    subroutine wilson(u, spt, sps, sp)
+    function s_wilson(u)
             type(gauge_field), intent(in) :: u
-            INTEGER :: x, y, z, t
-            REAL, dimension(6) :: plqs
-            REAL, dimension(u%nt), intent(out) :: spt, sps
-            REAL, intent(out) :: sp
+            real :: s_wilson
+            type(real_field_var) :: sp
+            integer :: i,j
 
+            call sp%init_zero(u%nx * u%ny * u%nz * u%nt * num_images())
 
-            ! temporal and spatial plaquettes per time slice
-            spt = 0
-            sps = 0
+            do i = 1, 3
+                do j = i+1, 4
+                    call sp%increment( .rtrc.( &
+                        (u.sel.[-1,i]) * (u.shift.[i,1].sel.[-1,j]) &
+                        * (u.shift.[j,1].sel.[-1,-i]) * (u.sel.[-1,-j]) ))
+                end do
+            end do
 
-            ! average plaquette (t + s)
-            sp = 0
+            s_wilson = (6.0 - sp%field_avg()/3.0) / 6.0
 
-            plqs(1) = REAL(trace( &
-                multSu3( U(1, x, y, z, t, :, :), .false., &
-                multSu3( U(2, xp, y, z, t, :, :), .false., &
-                multSu3( U(1, x, yp, z, t, :, :), .true., &
-                U(2, x, y, z, t, :, :), .true.), &
-                .false. ), .false.) &
-                ))
-
-            plqs(2) = REAL(trace( &
-                multSu3( U(1, x, y, z, t, :, :), .false., &
-                multSu3( U(3, xp, y, z, t, :, :), .false., &
-                multSu3( U(1, x, y, zp, t, :, :), .true., &
-                U(3, x, y, z, t, :, :), .true.), &
-                .false. ), .false.) &
-                ))
-
-            plqs(3) = REAL(trace( &
-                multSu3( U(1, x, y, z, t, :, :), .false., &
-                multSu3( U(4, xp, y, z, t, :, :), .false., &
-                multSu3( U(1, x, y, z, tp, :, :), .true., &
-                U(4, x, y, z, t, :, :), .true.), &
-                .false. ), .false.) &
-                ))
-
-            plqs(4) = REAL(trace( &
-                multSu3( U(2, x, y, z, t, :, :), .false., &
-                multSu3( U(3, x, yp, z, t, :, :), .false., &
-                multSu3( U(2, x, y, zp, t, :, :), .true., &
-                U(3, x, y, z, t, :, :), .true.), &
-                .false. ), .false.) &
-                ))
-
-            plqs(5) = REAL(trace( &
-                multSu3( U(2, x, y, z, t, :, :), .false., &
-                multSu3( U(4, x, yp, z, t, :, :), .false., &
-                multSu3( U(2, x, y, z, tp, :, :), .true., &
-                U(4, x, y, z, t, :, :), .true.), &
-                .false. ), .false.) &
-                ))
-
-            plqs(6) = REAL(trace( &
-                multSu3( U(3, x, y, z, t, :, :), .false., &
-                multSu3( U(4, x, y, zp, t, :, :), .false., &
-                multSu3( U(3, x, y, z, tp, :, :), .true., &
-                U(4, x, y, z, t, :, :), .true.), &
-                .false. ), .false.) &
-                ))
-
-            sps(t) = sps(t) + 1.0/3.0 * (plqs(1) + plqs(2) + plqs(4))
-            spt(t) = spt(t) + 1.0/3.0 * (plqs(3) + plqs(5) + plqs(6))
-            sp = sp + 1.0/3.0 * (plqs(1) + plqs(2) + plqs(3) + plqs(4) + plqs(5) + plqs(6))
-
-
-            sps = sps / (3 * Nx * Ny * Nz)
-            spt = spt / (3 * Nx * Ny * Nz)
-            sp = sp / (6 * Nx * Ny * Nz * Nt)
-
-        end subroutine wilson
+        end function
 
 end module mod_measure

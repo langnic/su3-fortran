@@ -15,6 +15,10 @@ module mod_real_field_var
         procedure :: assign
         procedure :: neg
         procedure :: init_rnd
+        procedure :: init_zero
+        procedure :: increment
+        procedure :: field_sum
+        procedure :: field_avg
         generic :: operator (+) => add
         generic :: operator (-) => neg
         generic :: assignment (=) => assign
@@ -39,6 +43,8 @@ module mod_real_field_var
         procedure :: gt_loc
         procedure :: neg_loc
         procedure :: init_rnd => init_rnd_loc
+        procedure :: init_zero => init_zero_loc
+        procedure :: increment => increment_loc
         generic :: operator (+) => add_loc
         generic :: operator (-) => subtract_loc, neg_loc
         generic :: operator (*) => mult_loc, mult_loc_scalar
@@ -184,6 +190,87 @@ contains
         class(real_field_var), intent(in) :: a
         type(loc_real_field_var) :: res
         allocate(res%data(size(a%data)), source=a%data*(-1.0))
+    end function
+
+    !! increment assignment
+    subroutine increment(y, x)
+        type(loc_real_field_var), intent(in) :: x
+        class(real_field_var), intent(inout) :: y
+
+        if (.not. allocated(y%data) .or. .not. allocated(x%data)) then
+            error stop "Increment: variable has to be allocated"
+        end if
+
+        if (size(x%data) /= size(y%data)) then
+            error stop "Increment: dimensions don't match"
+        end if
+
+        y%data = y%data + x%data
+        return
+    end subroutine
+
+    !! increment assignment (local)
+    subroutine increment_loc(y, x)
+        type(loc_real_field_var), intent(in) :: x
+        class(loc_real_field_var), intent(inout) :: y
+
+        if (.not. allocated(y%data) .or. .not. allocated(x%data)) then
+            error stop "Increment: variable has to be allocated"
+        end if
+
+        if (size(x%data) /= size(y%data)) then
+            error stop "Increment: dimensions don't match"
+        end if
+
+        y%data = y%data + x%data
+        return
+    end subroutine
+
+    !! initialize su3_field_var with zeros
+    subroutine init_zero(self, s)
+        class(real_field_var), intent(inout) :: self
+        integer, intent(in) :: s
+        integer :: idx
+
+        if (mod(s,num_images()) /= 0) &
+            error stop "Init field var: size has to be multiple of number of nodes"
+        if (allocated(self%data)) deallocate(self%data)
+        allocate(self%data(int(s/num_images()))[*])
+        self%data = 0
+
+    end subroutine
+
+    !! initialize su3_field_var with zeros
+    subroutine init_zero_loc(self, s)
+        class(loc_real_field_var), intent(inout) :: self
+        integer, intent(in) :: s
+        integer :: idx
+
+        if (mod(s,num_images()) /= 0) &
+            error stop "Init field var: size has to be multiple of number of nodes"
+        if (allocated(self%data)) deallocate(self%data)
+        allocate(self%data(s))
+        self%data = 0
+
+    end subroutine
+
+
+    !! obtain global sum
+    function field_sum(self) result (res)
+        class(real_field_var), intent(in) :: self
+        real :: res
+        res = sum(self%data)
+        call co_sum(res)
+        res = res
+    end function
+
+    !! obtain global average value
+    function field_avg(self) result (res)
+        class(real_field_var), intent(in) :: self
+        real :: res
+        res = sum(self%data)
+        call co_sum(res)
+        res = res / (size(self%data)*num_images())
     end function
 
 end module mod_real_field_var

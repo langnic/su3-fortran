@@ -5,6 +5,7 @@ program main
     use mod_real_field_var
     use mod_interfaces
     use mod_metropolis
+    use mod_measure
     implicit none
 
 
@@ -15,10 +16,12 @@ program main
     !write(*,*) this_image()
     complex :: res(3,3), res2(3,3)
     real :: acc = 0
+    real :: sw
     integer :: i
 
 
-    call u%initialize(24,24,24,24,.false.)
+    call u%initialize(16,16,16,16,.false.)
+
 
     !! Some tests
 
@@ -64,6 +67,8 @@ program main
         print *, 'Iteration: ', i, 'Acc: ', acc
     end do
 
-    print *, 'Acc: ', acc
+    sw = s_wilson(u)
+
+    print *, 'Acc: ', acc, ', s_wilson: ', sw
 
 end program main
