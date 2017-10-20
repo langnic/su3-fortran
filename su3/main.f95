@@ -20,6 +20,7 @@ program main
     integer :: i
 
 
+    call random_seed()
     call u%initialize(16,16,16,16,.false.)
 
 
@@ -62,12 +63,12 @@ program main
 
     ! 10 metropolis sweeps
 
-    do i = 1, 4
+    do i = 1, 10
         call metro(u, 0.01, 6.0, acc)
         print *, 'Iteration: ', i, 'Acc: ', acc
     end do
 
-    sw = s_wilson(u)
+    sw = (s_wilson(u)-1)*(-1)
 
     print *, 'Acc: ', acc, ', s_wilson: ', sw
 

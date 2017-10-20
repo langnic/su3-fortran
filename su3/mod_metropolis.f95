@@ -55,6 +55,7 @@ module mod_metropolis
             type(loc_real_field_var) :: delta_s, rnd_field
             integer :: p, d, s, acc_count
             real :: rnd1, rnd2
+            real :: scnrm2
 
             s = u%nx * u%ny * u%nz * u%nt / 2
             acc_count = 0
@@ -82,8 +83,34 @@ module mod_metropolis
 
                 new_link = (u.sel.[p,d]) * update_tab(ceiling(rnd2*100))
 
+                !! Tests
+                if (this_image() == 1) then
+                    print *, 'Rnd2: ', rnd2
+                    print *
+
+                    print *, 'Update:'
+                    print *, update_tab(ceiling(rnd2*100))%data(1,:,1)
+                    print *, update_tab(ceiling(rnd2*100))%data(2,:,1)
+                    print *, update_tab(ceiling(rnd2*100))%data(3,:,1)
+                    print *
+
+                    print *, 'New link:'
+                    print *, new_link%data(1,:,1)
+                    print *, new_link%data(2,:,1)
+                    print *, new_link%data(3,:,1)
+
+                    print *
+                    print *, 'Orthogonal: ', dot_product(new_link%data(1,:,1), new_link%data(2,:,1)), &
+                        dot_product(new_link%data(1,:,1), new_link%data(3,:,1)), &
+                        dot_product(new_link%data(2,:,1), new_link%data(3,:,1))
+                    print *, 'Normal: ', scnrm2(3,new_link%data(1,:,1),1), scnrm2(3,new_link%data(2,:,1),1), &
+                        scnrm2(3,new_link%data(3,:,1),1)
+                end if
+
                 ! calculate action change
                 delta_s = beta / 3.0 * .rtrc.((new_link - (u.sel.[p,d])) * stp)
+
+                if (this_image() == 1) print *, 'Delta S: ', delta_s%data(1)
 
                 ! accept with some prob. dep. on action
                 call rnd_field%init_rnd(s)

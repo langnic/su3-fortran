@@ -9,23 +9,23 @@ module mod_measure
     contains
 
     function s_wilson(u)
-            type(gauge_field), intent(in) :: u
-            real :: s_wilson
-            type(real_field_var) :: sp
-            integer :: i,j
+        type(gauge_field), intent(in) :: u
+        real :: s_wilson
+        type(real_field_var) :: sp
+        integer :: i,j
 
-            call sp%init_zero(u%nx * u%ny * u%nz * u%nt * num_images())
+        call sp%init_zero(u%nx * u%ny * u%nz * u%nt * num_images())
 
-            do i = 1, 3
-                do j = i+1, 4
-                    call sp%increment( .rtrc.( &
-                        (u.sel.[-1,i]) * (u.shift.[i,1].sel.[-1,j]) &
-                        * (u.shift.[j,1].sel.[-1,-i]) * (u.sel.[-1,-j]) ))
-                end do
+        do i = 1, 3
+            do j = i+1, 4
+                call sp%increment( .rtrc.( &
+                    (u.sel.[-1,i]) * (u.shift.[i,1].sel.[-1,j]) &
+                    * (u.shift.[j,1].sel.[-1,-i]) * (u.sel.[-1,-j]) ))
             end do
+        end do
 
-            s_wilson = (6.0 - sp%field_avg()/3.0) / 6.0
+        s_wilson = (6.0 - sp%field_avg()/3.0) / 6.0
 
-        end function
+    end function
 
 end module mod_measure
