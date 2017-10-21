@@ -22,7 +22,8 @@ module mod_utils
             r = r - 0.5
             !eps = 0.01
             x(2:4) = eps * r(2:4) / NORM2(r(2:4))
-            x(1) = sign(1.0, r(1)) * sqrt(1 - eps**2)
+            !x(1) = sign(1.0, r(1)) * sqrt(1 - eps**2)
+            x(1) = 1!sqrt(1 - eps**2)
 
             get_small_su2 = x(1) * sig0 + (0,1) * ( x(2) * sig1 + x(3) * sig2 + x(4) * sig3 )
 
@@ -56,7 +57,11 @@ module mod_utils
             t(:,1) = (/ 1, 0, 0 /)
             t(1,:) = (/ 1, 0, 0 /)
 
-            get_random_su3 = matmul(r, matmul(s, t)) ! TODO: replace with blas function
+            !get_random_su3 = matmul(r, matmul(s, t)) ! TODO: replace with blas function
+            get_random_su3 = multSu3(r, .false., &
+                multSu3(s, .false., t, .false.), .false.)
+
+            call unitarize(get_random_su3)
 
             !write(*,*) ' ', get_small_su3(1,:)
             !write(*,*) ' ', get_small_su3(2,:)
@@ -78,7 +83,7 @@ module mod_utils
         !! project complex square matrix to unitarity
         subroutine unitarize(m)
             real :: scnrm2
-            complex, dimension(3,3) :: m
+            complex, dimension(3,3), intent(inout) :: m
             complex, dimension(3) :: v
             complex :: cdotc
 

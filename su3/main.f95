@@ -18,10 +18,11 @@ program main
     real :: acc = 0
     real :: sw
     integer :: i
+    real :: scnrm2
 
 
     call random_seed()
-    call u%initialize(16,16,16,16,.false.)
+    call u%initialize(12,12,12,12,.false.)
 
 
     !! Some tests
@@ -63,13 +64,26 @@ program main
 
     ! 10 metropolis sweeps
 
-    do i = 1, 10
-        call metro(u, 0.01, 6.0, acc)
-        print *, 'Iteration: ', i, 'Acc: ', acc
-    end do
-
     sw = (s_wilson(u)-1)*(-1)
-
     print *, 'Acc: ', acc, ', s_wilson: ', sw
+
+    do i = 1, 100
+        call metro(u, 0.3, 6.0, acc)
+        sw = (s_wilson(u)-1)*(-1)
+
+        if (this_image() == 1) then
+            if (mod(i,50) == 0) then
+                print *, 'Iteration: ', i, 'Acc: ', acc, ', s_wilson: ', sw
+                !print *, 'Orthogonal: ', dot_product(data(1,:,1), data(2,:,1)), &
+                !    dot_product(data(1,:,1), data(3,:,1)), &
+                !    dot_product(data(2,:,1), data(3,:,1))
+                !print *, 'Normal: ', scnrm2(3,data(1,:,1),1), scnrm2(3,data(2,:,1),1), &
+                !    scnrm2(3,data(3,:,1),1)
+                !a(:,:) = update_tab(ceiling(rnd2*100))%data(:,:,1)
+                !print *, 'Det.: ', a(1,1) * a(2,2) * a(3,3) + a(1,2) * a(2,3) * a(3,1) + a(1,3) * a(2,1) * a(3,2) &
+                !        - a(1,3) * a(2,2) * a(3,1) - a(1,1) * a(2,3) * a(3,2) - a(1,2) * a(2,1) * a(3,3)
+            end if
+        end if
+    end do
 
 end program main
