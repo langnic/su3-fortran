@@ -22,6 +22,7 @@
 \usepackage{amsmath}
 \usepackage{floatrow}
 \usepackage[margin=1.2in]{geometry}
+\usepackage{pdfpages}
 
 \usepackage[
     backend=biber,
@@ -49,7 +50,7 @@
 	bookmarksopenlevel=3,
 	plainpages=false,
 	pdfpagelabels=true,
-	pdftitle={A quenched QCD lattice implementation using Fortran coarrays},
+	pdftitle={A quenched QCD implementation using Fortran coarrays},
 	pdfauthor={Nicolas Lang},
 	pdfsubject={Lab report},
 	pdfkeywords={QCD, Lattice, Fortran, Coarrays}
@@ -102,7 +103,7 @@
   basicstyle=\footnotesize,        % the size of the fonts that are used for the code
   breakatwhitespace=false,         % sets if automatic breaks should only happen at whitespace
   breaklines=true,                 % sets automatic line breaking
-  captionpos=b,                    % sets the caption-position to bottom
+  captionpos=t,                    % sets the caption-position to top
   commentstyle=\color{mygreen},    % comment style
   escapeinside={\%*}{*)},          % if you want to add LaTeX within your code
   extendedchars=true,              % lets you use non-ASCII characters; for 8-bits encodings only, does not work with UTF-8
@@ -125,8 +126,8 @@
 
 %\linenumbers
 
-\title*{A quenched QCD lattice implementation using Fortran coarrays\\ }
-\subtitle{Lab report}
+\title*{A quenched QCD implementation using Fortran coarrays\\ }
+\subtitle{Lab report - Projektpraktikum, M.Sc. Physik}
 % Use \titlerunning{Short Title} for an abbreviated version of
 % your contribution title if the original one is too long
 \author{Nicolas Lang}
@@ -166,32 +167,28 @@
 
 \section{Design choices}
 
-This section discusses an implementation of the quenched approximation of QCD on the lattice using coarrays for data parallelism.
+This section discusses the general design ideas behind the coarray-based quenched QCD implementation presented in this report.
 
 \subsection{Fortran coarrays}
-
 Coarrays provide a way to distribute data accross multiple program instances while retaining a concise syntax that abstracts the underlying inter-process or network communication. Formerly an extension of Fortran 95, coarrays are now part of the Fortran 2008 standard. Coarrays are variables with one or several \emph{codimensions} and indices referencing data stored by another program instance, called \emph{image}. \emph{Images} represent copies of the program that run asynchronously and can possess further independent local variables. The coarray entries can be accessed from every image by specifying the respective \emph{coindex} representing the image, where the data is stored. The size of the codimension is determined at runtime from the number of running images. The standard provides for additional methods that enable the user to obtain the number of images and the index of the current image and to introduce a break point to synchronize images. The coarray support in the GNU Fortran compiler is based on the \emph{OpenCoarrays} \cite{opencoarrays} library which in turn is based on the Message Passing Interface (MPI).
 
 \subsection{Shortcomings of the current coarray implementation}
-% no pointers... blabla
-Lorem ipsum dolor sit amet, consectetur et florabibimus sibet insipitur.
-
+The current implementation of coarrays in Fortran suffers from a number of shortcomings. Most notably, there is no notion of coarray pointers. This makes data encapsulation difficult. A new proposal called Coarray Fortran 2.0 \cite{coarr2.0} addresses this and other issues, but it is not clear whether and when it will become part of the Fortran standard. Therefore, work-arounds need to be found.
 
 \subsection{Overview and general ideas}
-
+The goal of this 
 
 
 \section{Implementation}
-
+This section is dedicated to the particular implementation of the aforementioned ideas. The derived types and operators are discussed first. Then a concise implementation of the metropolis algorithm is presented.
 
 \subsection{Types}
+A number of derived types is needed in order to hide underlying data structures from the user and to facilitate global field operations. These types can be grouped into field types, which keep a record of spatial and temporal indices, and field variable types, which are meaningful only with respect to a given field or in the context of reductions. The implementation makes use of object oriented features introduced in Fortran 2003.
 
 \subsubsection*{Gauge field}
-% global data corarray
-% local index array
-% initialization
-
-\begin{lstlisting}%[caption=Test]
+The \emph{gauge\_field} type serves as an auxiliary handle to perform operations on the gauge field itself. It does not contain any data as a member but instead accesses the global module variable \emph{data} from its type bound methods. The following code snippet shows the type definition:
+\begin{lstlisting}[caption={Type definition of the \emph{gauge\_field} type}]
+complex, allocatable :: data(:,:,:)[:]
 
 type, public :: gauge_field
     integer, allocatable :: indices(:,:,:,:,:,:)
@@ -203,21 +200,117 @@ type, public :: gauge_field
 contains
     
     ! ...
+    procedure :: initialize
+    procedure :: update
+    ! ...
     
 end type gauge_field
 \end{lstlisting}
+Data is stored linearly. The \emph{data} variable is an allocatable coarray of type complex with three dimensions and one codimension. It's first two dimensions are those of the complex matrices, running from 1 to 3 in the case of SU(3). The third dimension is the local index. The codimension (in square brackets) represents the index of the image. These indices will be refered to as \emph{storage indices}. As field operators will often depend on link variables of the nearest neighbours, performing parallel operations requires lattice sites to be divided into sites of even or odd parity in these cases. Parity is defined by the euclidean indices as $p = (x+y+z+t)\ mod\ 2$. Thus, all sites of a given parity can be updated in parallel without affecting one another. It is then favourable from a performance perspective to align data of a given parity in memory in order to avoid cache misses. Data is therefore organized in the order $x, y, z, t, direction, parity$, i.e. link variables of a particular direction and parity that are next to each other in $x$ are stored consecutively. Euclidean indices and link direction will be referred to as \emph{field indices}. The translation between field indices and storage indices is done with the help of an index array. Its dimensions represent in this order: index/coindex, $x, y, z, t, direction$. Parity is not stored as an index since it can be calculated from the euclidean indices.
+The \emph{gauge\_field} type possesses two integer members \emph{dir} and \emph{par} which serve as flags on temporaries used in arithmetic operations. This is further explained when discussing operators. The integers $x_{\text{low}}$, $x_{\text{up}}$ etc. define the boundaries of the current image, $n_x$, ..., $n_t$ the lengths of the respective dimensions.
+The \emph{initialize} method allocates the data array and initializes the matrices either to the unit matrix or random unitary $3\times3$ matrices. It also fills the index array and distributes the data to the available
+images. The latter is performed in the $t$ and $z$ dimensions.
+The \emph{update} method updates all link variables of parity $pin$ and direction $din$ with values stored in the \emph{su3\_field\_var} variable supplied as the third argument, if the corresponding link stored in the fourth argument of type \emph{logical\_field\_var} is set to \lstinline{.true.}{}.
 
+\begin{lstlisting}[caption={Update subroutine of the \emph{gauge\_field} type. The subroutine \emph{comp\_dimensions} computes \emph{d\_low}, \emph{d\_up} and \emph{step\_size} from the values of the direction and parity flags}]
+subroutine update(a, pin, din, fv, lfv, acc)
+    class(gauge_field), intent(inout) :: a
+    integer, intent(in) :: pin, din
+    type(loc_su3_field_var), intent(inout) :: fv
+    type(loc_logical_field_var), intent(in) :: lfv
+    integer, intent(inout) :: acc
+    integer :: i,j,k,l,d, idx
+    integer :: d_low, d_up, da, la, step_size
+
+    a%par = pin
+    a%dir = din
+
+    call check_dim_fv(a, size(fv%data)/9)
+    call check_dim_fv(a, size(lfv%data))
+    call comp_dimensions(a, fv, d_low, d_up, step_size)
+
+    idx = 1
+    do d = d_low, d_up              		! directions
+        do i = a%t_low, a%t_up              ! t
+            do j = a%z_low, a%z_up          ! z
+                do k = a%y_low, a%y_up                 				! y
+                    do l = a%x_low-1+step_size, a%x_up, step_size   ! x
+                        if (d == 0) then    		! specific direction
+                            da = abs(a%dir)
+                        else                		! all directions
+                            da = d
+                        end if
+                        if (step_size == 2) then    ! defined parity
+                            la = l-abs(mod(i+j+k,2)-a%par)
+                        else                        ! undefined parity
+                            la = l
+                        end if
+
+                        if (lfv%data(idx)) then
+                            if (fv%conj) then
+                                data(:,:,a%indices(0,la,k,j,i,da)) &
+                                [a%indices(1,la,k,j,i,da)] &
+                                = conjg(transpose(fv%data(:,:,idx)))
+                            else
+                                data(:,:,a%indices(0,la,k,j,i,da)) &
+                                [a%indices(1,la,k,j,i,da)] &
+                                = fv%data(:,:,idx)
+                            end if
+                            acc = acc + 1
+                        end if
+                        idx = idx + 1
+
+                    end do
+                end do
+           end do
+        end do
+    end do
+
+    ! reset parity and direction again
+    a%par = -1
+    a%dir = 0
+
+end subroutine
+\end{lstlisting}
 
 \subsubsection*{Field variables}
 % local data
 % field var types
+Field variable types possess data members which are either arrays or coarrays of a given type and represent the results of operations on \emph{gauge\_fields} and other field variables. They do not have any notion of spatial and temporal indices or direction. This is intended since the operands of a binary operator creating the field variable could have different parities or directions. Therefore the indices of the result would not be well defined. Hence, field variables are only meaningful in operations with gauge fields or reductions, such as sums or mean values.
+Currently 3 types of field variables are implemented:
+\begin{itemize}
+	\item SU(3)-matrix-valued: \emph{su3\_field\_var}
+	\item real-valued: \emph{real\_field\_var}
+	\item logical-valued: \emph{logical\_field\_var}
+\end{itemize}
+\begin{lstlisting}[caption={Type definition of the \emph{su3\_field\_var} type}]
+type, public :: su3_field_var
+    complex, allocatable :: data(:,:,:)[:]
+    logical :: conj = .false.
+contains
+    procedure :: add
+    procedure :: add_glob_loc
+    procedure :: assign
+    procedure :: increment
+    procedure :: real_trace
+    procedure :: init_rnd
+    procedure :: init_zero
+    generic :: operator (+) => add, add_glob_loc
+    generic :: assignment (=) => assign
+    generic :: operator (.rtrc.) => real_trace
+end type su3_field_var
+\end{lstlisting}
+Additionally each field variable type comes in a local version, meaning that the data member is an arrray instead of a coarray. This is necessary since derived types containing coarrays cannot be function return values. An overloaded assignment operator on the (global) field variable types allows the assignment of local field variables to (global) field variables, i.e. the array is copied into the local part of the coarray on every image. Reductions are only possible on (global) field variables for obvious reasons. Increment and initialization routines are defined for the \emph{su3\_field\_var} and \emph{real\_field\_var} types. The \lstinline{.rtrc.}{} operator calculates the real part of the trace on an \emph{su3\_field\_var} and returns a \emph{real\_field\_var}.
 
 
 \subsection{Operators}
 
+For convenient use of the \emph{gauge\_field} type and the field variable types in arithmetic and logical operations various operators are overloaded. On \emph{gauge\_field}s additionally select and shift operators are defined to specify which links should be used in subsequent operations.
+
 \subsubsection*{Select and shift}
 
-\begin{lstlisting}
+As most operations are not intended to be applied to every link simultaneously select and shift operators are defined on \emph{gauge\_field}s. The select operator enables the user to specify a parity and a link direction. It is a binary operator where one of the operands is a \emph{gauge\_field} and the other an integer array with two entries, the first of which specifies parity and the second the link direction. If both parities are needed a value of -1 is used for the first entry. To select all directions the second entry is set to 0. Negative directions cause the respective links to be conjugated in the subsequent operation. The select operator creates a temporary and sets the parity and direction flags on it to the respective values.
+\begin{lstlisting}[caption={Select operator of the \emph{gauge\_field} type}]
 function select (a, b) result (tmp)
     class(gauge_field), intent(in) :: a
     integer, dimension(2), intent(in) :: b
@@ -230,7 +323,8 @@ function select (a, b) result (tmp)
 end function
 \end{lstlisting}
 
-\begin{lstlisting}
+The shift operator is used to select neighbouring sites (as needed by gauge invariant operators such as the plaquette). It is a binary operator whose operands are a \emph{gauge\_field} and an integer array with two entries. The first entry represents the shift direction, the second entry the shift distance. The shift operator returns a temporary copy of the current \emph{gauge\_field} where the index array has been shifted in the specified direction and by the specified distance.
+\begin{lstlisting}[caption={Shift operator of the \emph{gauge\_field} type}]
 function shift (a, b) result (tmp)
     class(gauge_field), intent(in) :: a
     integer, dimension(2), intent(in) :: b
@@ -243,7 +337,8 @@ end function
 
 \subsubsection*{Arithmetic and logical operators}
 
-\begin{lstlisting}
+Arithmetic and logical operators can be defined between two \emph{gauge\_field}s, between a \emph{gauge\_field} and an \emph{su3\_field\_var} or between field variables. The abundance of types and possible combinations requires a large number of operator implementations, many of which only differ in the declaration part of the function. Since Fortran does not provide templates code duplication is unavoidable. Currently only the operators needed for the plaquette/staple are implemented. Since it is always possible to convert between local and global field variables, most of them are only available for the local versions of the field variables.
+\begin{lstlisting}[caption={Multiplication operator between a \emph{gauge\_field} and an \emph{su3\_field\_var}. The function multSu3 is a wrapper around the Basic Linear Algebra Subroutines (BLAS) function cgemm. The second and fourth argument indicate whether the matrix should be conjugated.}]
 function multiply_fv(a, b) result (res)
     
     ! ...
@@ -281,13 +376,38 @@ function multiply_fv(a, b) result (res)
 
 end function
 \end{lstlisting}
+It is necessary that operands have the same field dimensions, i.e. if odd parity has been selected on one of the operands then parity (but not necessarily the same) needs to be set on the other. All operators act on all selected links simultaneously, iterating over them in the order they are stored in memory. Which operators are currently implemented for which types can be seen in table \ref{tab:ops}.
+\begin{table}
+\caption{Arithmetic and logical operators and possible operands}
+\label{tab:ops}
+\begin{tabular}{l|l}
+Operator & Types \\
+\hline
+add (+) & \emph{gauge\_field}, \emph{su3\_field\_var}, \emph{real\_field\_var} \\
+subtract (-) & \emph{gauge\_field}, \emph{su3\_field\_var}, \emph{real\_field\_var} \\
+multiply (*) & \emph{gauge\_field}, \emph{su3\_field\_var}, scalars \\
+less than ($<$) & \emph{real\_field\_var} \\
+less than or equal ($<=$) & \emph{real\_field\_var} \\
+equal ($==$) & \emph{real\_field\_var} \\
+greater than or equal ($>=$) & \emph{real\_field\_var} \\
+greater than ($>$) & \emph{real\_field\_var} \\
+\end{tabular}
+\end{table}
+Logical operators produce \emph{logical\_field\_var}s as their results. To facilitate operations including intrinsic types like scalars and to overload intrinsic functions like $exp$ for field variables, an interface module is provided.
 
 \subsection{The metropolis module}
 
-\begin{lstlisting}
+The metropolis module provides a concise implementation of the metropolis algorithm using the types and operators described above. It contains the \emph{staple} function and the \emph{metro} subroutine as well as an array of 100 \emph{su3\_field\_var}s containing update matrices close to unity. The \emph{init\_update\_tab} subroutine allocates the update table. Matrices close to unity are produced from SU(2) generators following the method described in \cite{gattringer}. The staple function makes use of the \emph{increment} method of \emph{su3\_field\_var}s to avoid unnecessary temporaries.
+
+\begin{lstlisting}[caption={Staple function}]
 function staple(u, p, d)
-    
-    ! ...
+
+    type(gauge_field), intent(in) :: u
+    integer, intent(in) :: d, p
+	integer :: i, s
+	type(loc_su3_field_var) :: staple
+
+	s = u%nx * u%ny * u%nz * u%nt / 2
 
     call staple%init_zero(s)
     do i = 1, 4
@@ -305,11 +425,24 @@ function staple(u, p, d)
 
 end function staple
 \end{lstlisting}
+The metropolis routine initializes the update table based on the value of \emph{eps} if it has not been initialized yet and then iterates over even and odd sites and all directions. In every iteration a candidate link \emph{su3\_field\_variable} is produced from the gauge field and a randomly chosen field variable from the update table. The selected update field variable is conjugated in $50\%$ of the cases to fulfill the detailed balance criterion. The action change $delta_s$ is represented by a \emph{real\_field\_var} and calculated from the old and new links making use of the real trace operator \lstinline{.rtrc.}{}. Finally the \emph{gauge\_field}'s update routine is called using a randomly initialized \emph{real\_field\_var} and the exponentiated action delta for the update condition, the former being required to be smaller or equal to the latter for an update to take place. The metropolis routine will also keep track of the acceptance rate.
 
-\begin{lstlisting}
+\begin{lstlisting}[caption={Metro subroutine running one sweep for both parities and each direction}]
 subroutine metro(u, eps, beta, acc)
 
-    ! ...
+    type(gauge_field), intent(inout) :: u
+	real, intent(inout) :: acc
+	real, intent(in) :: eps, beta
+	type(loc_su3_field_var) :: stp, new_link
+	type(loc_real_field_var) :: delta_s, rnd_field
+	integer :: p, d, s, acc_count
+	real :: rnd1, rnd2
+	
+	s = u%nx * u%ny * u%nz * u%nt / 2
+	acc_count = 0
+	
+	! generate link updates
+	call init_update_tab(100, s, eps)
 
     ! iterate over both parities and all directions
     do p = 1,2
@@ -348,6 +481,12 @@ end subroutine metro
 
 \section{Sample measurement}
 
+\begin{figure}
+\centering
+\includegraphics[width=0.8\textwidth]{../plots/beta_scan_16x16.pdf}
+\caption{$\beta$-Scan for a $16^4$ lattice}
+	\label{img:beta}
+\end{figure}
 
 
 \pagebreak

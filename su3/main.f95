@@ -38,6 +38,7 @@ program main
     allocate(sp(n_measure))
     print *, 'Start run'
 
+    !! Perform beta scan
     do
         print *, 'Beta = ', beta
 

@@ -1,0 +1,412 @@
+% Copyright 2009 David Fritzsche
+
+% This program can be redistributed and/or modified under the terms
+% of the GNU Public License, version 2.
+
+\mode<presentation>
+
+
+% Mini frames
+
+% \defbeamertemplateparent{mini frames}{mini frame,mini frame in current subsection}
+% {}
+
+% \defbeamertemplate*{mini frame}{Wuppertal}
+% {%
+%   \begin{pgfpicture}{0pt}{0pt}{0.1cm}{0.1cm}
+%     \pgfpathcircle{\pgfpoint{0.05cm}{0.05cm}}{0.05cm}
+%     \pgfusepath{fill,stroke}
+%   \end{pgfpicture}%
+% }
+% [action]
+% {
+%   \setbeamersize{mini frame size=.14cm,mini frame offset=.03cm}
+% }
+
+% \defbeamertemplate*{mini frame in current subsection}{Wuppertal}
+% {%
+%   \begin{pgfpicture}{0pt}{0pt}{0.1cm}{0.1cm}
+%     \pgfpathcircle{\pgfpoint{0.05cm}{0.05cm}}{0.05cm}
+%     \pgfusepath{stroke}
+%   \end{pgfpicture}%
+% }
+
+% \defbeamertemplate*{mini frame in other subsection}{Wuppertal}[1][50]
+% {\color{fg!#1!bg}\usebeamertemplate{mini frame in current subsection}}
+
+
+
+
+% Navigation symbols
+
+\defbeamertemplate*{navigation symbols}{Wuppertal}
+{%
+  \hbox{%
+    \hbox{\insertslidenavigationsymbol}
+    \hbox{\insertframenavigationsymbol}
+    \hbox{\insertsubsectionnavigationsymbol}
+    \hbox{\insertsectionnavigationsymbol}
+    \hbox{\insertdocnavigationsymbol}
+    \hbox{\insertbackfindforwardnavigationsymbol}%
+  }%
+}
+
+% No navigation symbols in handout or trans mode:
+%\only<handout| trans>{\setbeamertemplate{navigation symbols}{}}
+\setbeamertemplate{navigation symbols}{}
+
+
+% Section and subsections in head/foot
+
+\defbeamertemplate*{section in head/foot}{Wuppertal}
+{\hfil\insertsectionhead}
+
+\defbeamertemplate*{section in head/foot shaded}{Wuppertal}[1][50]
+{\color{fg!#1!bg}\usebeamertemplate{section in head/foot}}
+
+\defbeamertemplate*{subsection in head/foot}{Wuppertal}
+{\insertsubsectionhead}
+
+\defbeamertemplate*{subsection in head/foot shaded}{Wuppertal}[1][50]
+{\color{fg!#1!bg}\usebeamertemplate{subsection in head/foot}}
+
+\defbeamertemplate*{subsubsection in head/foot}{Wuppertal}
+{\insertsubsubsectionhead}
+
+\defbeamertemplate*{subsubsection in head/foot shaded}{Wuppertal}[1][50]
+{\color{fg!#1!bg}\usebeamertemplate{subsubsection in head/foot}}
+
+
+
+%\logo{\BUWAI[height=2cm]}
+
+%%\logo{}
+
+%\logo{\BUWAI[height=3cm]}
+
+
+
+
+% Headline and footline
+
+
+%\newbox\WuppertalHeadLogoBox
+%\setbox\WuppertalHeadLogoBox=\hbox{%
+%  \hbox{\resizebox{!}{14mm}{\hbox{\insertlogo}}}%
+%}%
+
+\newdimen\logoheight
+
+\newbox\unilogobox
+\setbox\unilogobox=\hbox{\includegraphics{buw-logo-trans-300dpi}}
+\logoheight=\ht\unilogobox
+\advance\logoheight by \dp\unilogobox
+\advance\logoheight by \p@
+
+\defbeamertemplate*{headline}{Wuppertal}
+{%
+%%   \vbox to 0pt{%
+%%     \vskip\logoheight
+%%     \hbox to \paperwidth{%
+%%       \hskip 1.4cm
+%%       \vbox{%
+%%         \hsize=\paperwidth
+%%         \advance\hsize -1.4cm
+%%         \begin{beamercolorbox}[wd=\hsize,ht=3.2mm,dp=1.3mm]{instituteline}
+%%           \hskip2mm
+%%           \textbf{Fachbereich C} /
+%%           Fachgruppe Mathematik und Informatik
+%%         \end{beamercolorbox}
+%%         \usebeamercolor[bg]{headline}%
+%%         \hrule height 0.4pt
+%%         \usebeamercolor[bg]{background}%
+%%         \dimen0=\paperheight
+%%         \advance\dimen0 by -1.6cm % headline
+%%         \advance\dimen0 by -3.4mm % footline
+%%         \advance\dimen0 by -4.5mm % sub-headline
+%%         % Der Hintergrund Balken ueberlappt noch ca. 0.4pt mit der
+%%         % Fusszeile, d.h. es wird keine Luecke entstehen.
+%%         \hrule height \dimen0
+%%       }%
+%%     }%
+%%     \vss
+%%   }%
+  \begin{beamercolorbox}[wd=\paperwidth,ht=\logoheight,dp=0mm]{headline}
+    \hbox to \paperwidth{%
+       \vbox to\logoheight{\vss\copy\unilogobox\vss}%
+       \dimen0=\logoheight
+       \advance\dimen0 by -1mm
+       \vbox to \dimen0{%
+         %\hsize=8cm
+         \vfil
+         \usebeamertemplate*{section navigation in head/foot}%
+         \vfil
+         \vskip1mm}%
+      \hfill
+      %%
+      \llap{\vbox to \logoheight{\vss
+          \advance\logoheight by -1mm\relax
+          \hbox{\resizebox{!}{\the\logoheight}{{~\strut}\insertlogo}}%
+          \vss}%
+        \hskip3mm\relax
+      }%
+    }%
+    %%\vskip2pt\insertnavigation{\paperwidth}\vskip2pt
+  \end{beamercolorbox}%
+}
+
+\pgfdeclareverticalshading{WuppertalTitlePageShading}{\paperwidth}{%
+  color(0cm)=(white); color(5cm)=(white); color(9cm)=(WtalGruen)}%
+
+\defbeamertemplate{headline}{Wuppertal Title Page}
+{%
+  \vbox to 0pt{%
+    \pgfuseshading{WuppertalTitlePageShading}
+    \begin{beamercolorbox}[wd=\paperwidth,ht=9cm,bg=]{headline}
+    \end{beamercolorbox}
+    \vss
+    }%
+}%
+
+
+\defbeamertemplate{footline}{Wuppertal Title Page}
+{%
+  %\vfill
+  %\vbox to 0pt{%
+    %\vss
+    \begin{beamercolorbox}[wd=\paperwidth,ht=1cm,dp=0mm]{headline}
+      \hbox to \paperwidth{%
+        \includegraphics[height=1cm]{buw-logo-trans-300dpi}%
+        \llap{\vbox to 1cm{\vss
+            \hbox{\resizebox{!}{8mm}{\hbox{{~\strut}\insertlogo}}}%
+            \vss}\hskip2mm}%
+      }%
+      %% \vskip2pt\insertnavigation{\paperwidth}\vskip2pt
+    \end{beamercolorbox}%
+    % }%
+  %\vskip6mm
+}
+
+
+% \def\insertsubsectionnavigation#1{%
+%   \hbox to #1{%
+%      \vbox{\hsize=#1\relax%
+%        {%
+%          \usebeamerfont{subsection in head/foot}%
+%          \usebeamercolor[fg]{subsection in head/foot}%
+%          \vskip0.5625ex%
+% %         \beamer@currentsubsection=0%
+% %         \def\sectionentry##1##2##3##4##5{}%
+% %         \def\slideentry##1##2##3##4##5##6{%
+% %           \ifnum##6=\c@part\ifnum##1=\c@section%
+% %           \ifnum##2>\beamer@currentsubsection%
+% %           \beamer@currentsubsection=##2%
+% %           \def\insertsubsectionhead{##5}%
+% %           \def\insertsectionheadnumber{##1}%
+% %           \def\insertsubsectionheadnumber{##2}%
+% %           \def\insertpartheadnumber{##6}%
+% %           \setbox\beamer@tempbox=\hbox{\beamer@link(##4){%
+% %               \hbox to #1{\hskip0.3cm%
+% %                 \ifnum\c@subsection=##2%
+% %                 {\usebeamertemplate{subsection in head/foot}}%
+% %                 \else%
+% %                 {\usebeamertemplate{subsection in head/foot shaded}}%
+% %                 \fi\hfil\hskip0.3cm}}}%
+% %           \ht\beamer@tempbox=1.6875ex\dp\beamer@tempbox=0.75ex%
+% %           \box\beamer@tempbox\fi\fi\fi}%
+% %         \dohead
+%          \vskip0.5625ex
+%        }%
+%        \hfil
+%      }%
+%      % \hfil
+%    }%
+%  }
+
+
+
+
+
+\defbeamertemplate*{section navigation in head/foot}{vertical}
+{%
+  \begin{beamercolorbox}[wd=7cm]{section in head/foot}
+    \hbox{%
+      \advance\logoheight by -2mm\relax
+      \vbox to \logoheight{%
+        \hsize=3cm
+        \insertsectionnavigation{3cm}%
+        \vss}%
+      \vrule
+      \vbox to \logoheight{%
+        %\hsize=3cm
+        \insertsubsectionnavigation{3cm}
+        \vss}%
+    }%
+  \end{beamercolorbox}
+}
+
+\defbeamertemplatealias{section navigation in head/foot}{Wuppertal}{vertical}
+\defbeamertemplatealias{section navigation in head/foot}{default}{vertical}
+
+\defbeamertemplate{section navigation in head/foot}{empty}{}
+
+
+
+\defbeamertemplate*{footline}{Wuppertal}
+{%
+  \begin{beamercolorbox}[wd=\paperwidth,ht=2.4mm,dp=1mm]{footline}
+    \fontsize{5}{6}\selectfont
+    %%\includegraphics{uni-logo-beamer}%
+    %%\vskip2pt\insertnavigation{\paperwidth}\vskip2pt
+%%     \rlap{%
+%%       \lower1mm\hbox{%
+%%         \includegraphics[height=3.4mm]{buw-logo-300dpi}\quad
+%%         \includegraphics[height=3.4mm]{white-lion}%
+%%       }%
+%%     }
+    \hskip1.6cm
+    \hbox to 10cm{%
+      \insertshorttitle,
+      \insertshortauthor
+      % Titel der Pr\"asentation, Name des Autors
+      \hss
+    }%
+    \hbox to 0.8cm{\hss
+      \usebeamercolor[fg]{page number in head/foot}%
+      \insertpagenumber /\insertdocumentendpage
+    }%
+    %\vskip5cm\vrule
+  \end{beamercolorbox}%
+}
+
+
+% background
+
+\defbeamertemplate*{background}{Wuppertal}
+{}
+
+\defbeamertemplate*{background canvas}{Wuppertal}
+{%
+  \ifbeamercolorempty[bg]{background canvas}{}{%
+    \color{bg}\vrule width\paperwidth height\paperheight}%
+}
+
+
+% Sidebar
+
+\defbeamertemplate*{sidebar left}{Wuppertal}
+{}
+
+%\setbeamersize{sidebar width left=1.4cm}
+
+\defbeamertemplate*{sidebar right}{Wuppertal}
+{
+  \vfill%
+  %%\llap{\insertlogo\hskip0.1cm}%
+  \vskip2pt%
+  \llap{\usebeamertemplate***{navigation symbols}\hskip0.1cm}%
+  \vskip2pt%
+}
+
+\defbeamertemplate*{sidebar canvas left}{Wuppertal}
+{%
+  \ifbeamercolorempty[bg]{sidebar left}{}
+  {\color{bg}\vrule height\sidebarheight width\beamer@leftsidebar}%
+}
+
+\defbeamertemplate*{sidebar canvas right}{Wuppertal}
+{%
+  \ifbeamercolorempty[bg]{sidebar right}{}
+  {\color{bg}\vrule height\sidebarheight width\beamer@rightsidebar}%
+}
+
+
+
+% Frame title: Wuppertal
+
+\defbeamertemplate*{frametitle}{Wuppertal}[1][left]
+{
+  \ifbeamercolorempty[bg]{frametitle}{}{\nointerlineskip}%
+  \@tempdima=\textwidth%
+  \advance\@tempdima by\beamer@leftmargin%
+  \advance\@tempdima by\beamer@rightmargin%
+%\advance\@tempdima by 5cm\relax
+  \begin{beamercolorbox}[sep=2mm,#1,wd=\the\@tempdima]{frametitle}
+    \usebeamerfont{frametitle}%
+    \vbox{}\vskip-1ex%
+    \if@tempswa\else\csname beamer@fte#1\endcsname\fi%
+    \strut\insertframetitle\strut\par%
+    {%
+      \ifx\insertframesubtitle\@empty%
+      \else%
+      {\usebeamerfont{framesubtitle}\usebeamercolor[fg]{framesubtitle}\insertframesubtitle\strut\par}%
+      \fi
+    }%
+    \vskip-1ex%
+    \if@tempswa\else\vskip-.3cm\fi% set inside beamercolorbox... evil here...
+  \end{beamercolorbox}%
+  \nointerlineskip
+  \begin{beamercolorbox}[wd=\the\@tempdima]{greenline}
+    \usebeamercolor[bg]{headline}%
+    \hrule height 0.4pt
+  \end{beamercolorbox}
+}
+
+\def\beamer@fteright{\vskip0.35cm\advance\leftskip by 1.7cm\advance\rightskip by1.7cm}
+
+
+% Frame title continuations, default
+
+\defbeamertemplate*{frametitle continuation}{Wuppertal}{%
+  \insertcontinuationcountroman}
+
+
+
+% Notes
+
+\defbeamertemplate*{note page}{Wuppertal}
+{%
+  {%
+    \scriptsize
+    \insertvrule{.25\paperheight}{white!90!black}
+    \vskip-.25\paperheight
+    \nointerlineskip
+    \vbox{
+      \hfill\insertslideintonotes{0.25}\hskip-\Gm@rmargin\hskip0pt%
+      \vskip-0.25\paperheight%
+      \nointerlineskip
+      \begin{pgfpicture}{0cm}{0cm}{0cm}{0cm}
+        \begin{pgflowlevelscope}{\pgftransformrotate{90}}
+          {\pgftransformshift{\pgfpoint{-2cm}{0.2cm}}%
+          \pgftext[base,left]{\footnotesize\the\year-\ifnum\month<10\relax0\fi\the\month-\ifnum\day<10\relax0\fi\the\day}}
+        \end{pgflowlevelscope}
+      \end{pgfpicture}}
+    \nointerlineskip
+    \vbox to .25\paperheight{\vskip0.5em
+      \hbox{\insertshorttitle[width=8cm]}%
+      \setbox\beamer@tempbox=\hbox{\insertsection}%
+      \hbox{\ifdim\wd\beamer@tempbox>1pt{\hskip4pt\raise3pt\hbox{\vrule
+            width0.4pt height7pt\vrule width 9pt
+            height0.4pt}}\hskip1pt\hbox{\begin{minipage}[t]{7.5cm}\def\breakhere{}\insertsection\end{minipage}}\fi%
+      }%
+      \setbox\beamer@tempbox=\hbox{\insertsubsection}%
+      \hbox{\ifdim\wd\beamer@tempbox>1pt{\hskip17.4pt\raise3pt\hbox{\vrule
+            width0.4pt height7pt\vrule width 9pt
+            height0.4pt}}\hskip1pt\hbox{\begin{minipage}[t]{7.5cm}\def\breakhere{}\insertsubsection\end{minipage}}\fi%
+      }%
+      \setbox\beamer@tempbox=\hbox{\insertshortframetitle}%
+      \hbox{\ifdim\wd\beamer@tempbox>1pt{\hskip30.8pt\raise3pt\hbox{\vrule
+            width0.4pt height7pt\vrule width 9pt
+            height0.4pt}}\hskip1pt\hbox{\insertshortframetitle[width=7cm]}\fi%
+      }%
+      \vfil}%
+  }%
+  \vskip.25em
+  \nointerlineskip
+  \insertnote
+}
+
+
+
+\mode
+<all>

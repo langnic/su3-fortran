@@ -1,0 +1,359 @@
+%%
+%% This is file `pspdf.sty',
+%% generated with the docstrip utility.
+%%
+%% The original source files were:
+%%
+%% pspdf.dtx  (with options: `package')
+%% This is a generated file.
+%% 
+%% Copyright 2008
+%% David Fritzsche
+%% \CharacterTable
+%%  {Upper-case    \A\B\C\D\E\F\G\H\I\J\K\L\M\N\O\P\Q\R\S\T\U\V\W\X\Y\Z
+%%   Lower-case    \a\b\c\d\e\f\g\h\i\j\k\l\m\n\o\p\q\r\s\t\u\v\w\x\y\z
+%%   Digits        \0\1\2\3\4\5\6\7\8\9
+%%   Exclamation   \!     Double quote  \"     Hash (number) \#
+%%   Dollar        \$     Percent       \%     Ampersand     \&
+%%   Acute accent  \'     Left paren    \(     Right paren   \)
+%%   Asterisk      \*     Plus          \+     Comma         \,
+%%   Minus         \-     Point         \.     Solidus       \/
+%%   Colon         \:     Semicolon     \;     Less than     \<
+%%   Equals        \=     Greater than  \>     Question mark \?
+%%   Commercial at \@     Left bracket  \[     Backslash     \\
+%%   Right bracket \]     Circumflex    \^     Underscore    \_
+%%   Grave accent  \`     Left brace    \{     Vertical bar  \|
+%%   Right brace   \}     Tilde         \~}
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{pspdf}[2008/09/03 v0.1]
+\ProcessOptions\relax
+\RequirePackage{keyval}
+\RequirePackage{calc}
+\def\pspdf@newifpdf{\newif\ifpdf}
+\ifx\ifpdf\undefined
+  \@namedef{ver@ifpdf.sty}{2008/09/03 by pspdf package}%
+  \pspdf@newifpdf
+  \ifx\pdfoutput\undefined
+  \else
+    \ifx\pdfoutput\relax
+    \else
+      \ifcase\pdfoutput
+      \else
+        \pdftrue
+      \fi
+    \fi
+  \fi
+\fi
+\ifx\removePT@\undefined
+  {\catcode`\p=12 \catcode`\t=12 \gdef\removePT@#1pt{#1}}
+\fi
+\begingroup
+\catcode`\{=12
+\catcode`\}=12
+\catcode`\[=1
+\catcode`\]=2
+\gdef\pslbrace[{ ]
+\gdef\psrbrace[} ]
+\endgroup
+\ifx\pstverb\undefined
+{\catcode`\"=12\gdef\pstverb#1{\special{" #1}}}
+\fi
+\ifx\pspdf@psobj\undefined
+  \def\pspdf@psobj#1{\special{! #1}}
+\fi
+\def\pspdf@string@rgb{rgb}
+\def\pspdf@string@cmyk{cmyk}
+\def\pspdf@string@gray{gray}
+\@namedef{pspdf@namedpscolor@Black }%
+  {\def\pspdf@color{0 0 0 1 setcmykcolor }}
+\let\pspdf@color\@empty
+\def\pspdf@ColorParser#1 #2/{%
+  %\typeout{PARSE COLOR: (#1) (#2)}%
+  \def\next{#1}%
+  \let\pspdf@color\empty
+  \ifx\next\pspdf@string@rgb
+    \def\pspdf@color{#2 setrgbcolor }%
+  \else\ifx\next\pspdf@string@cmyk
+    \def\pspdf@color{#2 setcmykcolor }%
+  \else\ifx\next\pspdf@string@gray
+    \def\pspdf@color{#2 setgray }%
+  \else\ifx\next\empty
+    % named color
+    %\def\pspdf@color{#2}%
+     \expandafter\ifx\csname pspdf@namedpscolor@#2\endcsname\relax
+       \typeout{unknown color: #2}%
+     \else
+       \csname pspdf@namedpscolor@#2\endcsname
+     \fi
+  \else
+    \typeout{unknown color: \current@color}%
+  \fi\fi\fi\fi
+}
+\def\pspdf@parsecurrentcolor{%
+  \let\pspdf@color\@empty
+  \ifpdf\else
+    \ifx\current@color\@undefined\else
+      \edef\next{\noexpand\pspdf@ColorParser\current@color\space/}%
+      \next
+    \fi
+  \fi
+}
+\newtoks\pspdf@defOperators
+\newtoks\pspdf@doOperators
+\def\PSPDFaddOperator{%
+  \@ifnextchar[{\pspdf@addoperator}{\pspdf@addoperator[0]}%]
+}
+\def\pspdf@addoperator[#1]{%
+  \ifpdf
+    \def\next{\pspdf@addPDFoperator{#1}}%
+  \else
+    \def\next{\pspdf@addPSoperator{#1}}%
+  \fi
+  \next
+}
+\def\pspdf@addPDFoperator#1#2#3#4{%
+  \pspdf@@addoperator{#1}{#2}{#3}%
+}
+\def\pspdf@addPSoperator#1#2#3#4{%
+  \pspdf@@addoperator{#1}{#2}{#4}%
+}
+\def\pspdf@@addoperator#1#2#3{%
+  \@tempcnta=#1\relax
+  \ifnum\@tempcnta=0\relax
+    \pspdf@defOperators=\expandafter{\the\pspdf@defOperators
+      \def#2{#3 }}
+  \else
+    \def\pspdf@tmp##1#1##2##{\def#2##1#1}%
+    \pspdf@defOperators=\expandafter\expandafter\expandafter{%
+      \expandafter\the\expandafter\pspdf@defOperators
+      \pspdf@tmp ##1##2##3##4##5##6##7##8##9###1{#3 }}%
+  \fi
+  %%
+  \pspdf@doOperators=\expandafter{\the\pspdf@doOperators\do#2}%
+  %%
+}%
+\def\pspdf@noexpandOperators{%
+  \let\pspdf@@do\do
+  \def\do##1{\def##1{\noexpand##1}}%
+  \the\pspdf@doOperators
+  \let\do\pspdf@@do
+}
+\def\PSPDFaddBasicOperator#1#2{%
+  \expandafter\PSPDFaddOperator\expandafter{%
+    \csname #1\endcsname}{#1}{#2}%
+  \expandafter\PSPDFaddOperator\expandafter{%
+    \csname #2\endcsname}{#1}{#2}%
+}
+\PSPDFaddBasicOperator{n}{newpath}
+\PSPDFaddBasicOperator{m}{moveto}
+\PSPDFaddBasicOperator{h}{closepath}
+\PSPDFaddBasicOperator{f}{fill}
+\PSPDFaddBasicOperator{l}{lineto}
+\PSPDFaddBasicOperator{c}{curveto}
+\PSPDFaddBasicOperator{w}{setlinewidth}
+\PSPDFaddBasicOperator{S}{stroke}
+\PSPDFaddBasicOperator{q}{gsave}
+\PSPDFaddBasicOperator{Q}{grestore}
+\PSPDFaddOperator{\s}{s}{closepath stroke}
+\PSPDFaddOperator[2]{\scale}{#1 0 0 #2 0 0 cm}{#1 #2 scale}
+\PSPDFaddOperator[1]{\xyscale}{#1 0 0 #1 0 0 cm}{#1 #1 scale}
+\PSPDFaddOperator[1]{\setgray}{#1 G #1 g}{#1 setgray}
+\PSPDFaddOperator[3]{\setrgbcolor}{#1 #2 #3 RG #1 #2 #3 rg}
+{#1 #2 #3 setrgbcolor}
+\def\pspdf@loadOperators{\the\pspdf@defOperators}
+\ifpdf
+  \let\pspdf@literal\pdfliteral
+\else
+  \let\pspdf@literal\pstverb
+\fi
+\def\PSPDFliteral#1{%
+  {%
+    \pspdf@loadOperators
+    \pspdf@literal{#1}%
+  }%
+}%
+\def\PSPDFdraw#1{%
+  \leavevmode\rlap{%
+    \pspdf@parsecurrentcolor
+    \@tempdima=0.99626401\unitlength%
+    \edef\next{\expandafter\removePT@\the\@tempdima}%
+    \vbox to\z@{\vss%
+      \pspdf@loadOperators
+      \pspdf@literal{\q\pspdf@color\scale{\next}{\next} #1 \Q}%
+    }%
+  }%
+}
+\newdimen\pspdf@w
+\newdimen\pspdf@h
+\def\pspdf@objxdef#1#2{%
+  \expandafter\xdef\csname pspdf@obj@#1@#2\endcsname}
+\def\pspdf@objuse#1#2{%
+  \csname pspdf@obj@#1@#2\endcsname
+}%
+\def\pspdf@setobjsize#1#2#3{%
+  {%
+    \pspdf@w=#2\relax
+    \pspdf@h=#3\relax
+    \pspdf@objxdef{#1}{w}{\the\pspdf@w}%
+    \pspdf@objxdef{#1}{h}{\the\pspdf@h}%
+    \setlength\@tempdima{1pt*\ratio{\pspdf@w}{\pspdf@h}}%
+    \pspdf@objxdef{#1}{w/h}{\expandafter\removePT@\the\@tempdima}%
+    \setlength\@tempdima{1pt*\ratio{\pspdf@h}{\pspdf@w}}%
+    \pspdf@objxdef{#1}{h/w}{\expandafter\removePT@\the\@tempdima}%
+  }%
+}
+\def\PSPDFdefineObject#1#2#3#4{%
+  \pspdf@setobjsize{#1}{#2}{#3}%
+  {%
+    \pspdf@noexpandOperators
+    \pspdf@objxdef{#1}{code}{#4}%
+  }%
+  \expandafter\gdef\csname pspdf@prepare@#1\endcsname{%
+    \ifx\@begindocumenthook\@undefined\else
+      \expandafter\AtBeginDocument
+    \fi
+    {\if@filesw
+      \write\@auxout{\string\pspdf@xoutputObject{#1}}%
+      \fi}%
+    \csname pspdf@output@#1\endcsname
+    \expandafter\gdef\csname pspdf@prepare@#1\endcsname{}%
+  }%
+  \expandafter\gdef\csname pspdf@output@#1\endcsname{%
+    \pspdf@outputObject{#1}%
+  }%
+}
+\def\PSPDFuseObject{%
+  \@ifnextchar[{\pspdf@useObject}{\pspdf@useObject[]}% ]
+}
+\define@key{pspdf-useobject}{width}{\def\pspdf@width{#1}}
+\define@key{pspdf-useobject}{height}{\def\pspdf@height{#1}}
+\define@key{pspdf-useobject}{scale}{\def\pspdf@scale{#1}}
+\define@key{pspdf-useobject}{xscale}{\def\pspdf@xscale{#1}}
+\define@key{pspdf-useobject}{yscale}{\def\pspdf@yscale{#1}}
+\def\pspdf@useObject[#1]#2{%
+  %%
+  \@nameuse{pspdf@prepare@#2}%
+  %%
+  \let\pspdf@width\@empty %\pspdf@excl
+  \let\pspdf@height\@empty %\pspdf@excl
+  \def\pspdf@scale{1}%
+  \def\pspdf@xscale{1}%
+  \def\pspdf@yscale{1}%
+  \setkeys{pspdf-useobject}{#1}%
+  %%
+  \ifx\pspdf@width\@empty\relax
+    % natural width
+    \ifx\pspdf@height\@empty\relax
+      \expandafter\pspdf@w\pspdf@objuse{#2}{w}%
+      \expandafter\pspdf@h\pspdf@objuse{#2}{h}%
+    \else
+      \expandafter\pspdf@h\pspdf@height
+      \expandafter\pspdf@w\pspdf@objuse{#2}{w/h}\pspdf@h%
+    \fi
+  \else % width specified
+    \ifx\pspdf@height\@empty\relax
+      \expandafter\pspdf@w\pspdf@width
+      \expandafter\pspdf@h\pspdf@objuse{#2}{h/w}\pspdf@w%
+    \else
+      \expandafter\pspdf@w\pspdf@width
+      \expandafter\pspdf@h\pspdf@height
+    \fi
+  \fi
+  \expandafter\@tempdima\pspdf@xscale\p@
+  \expandafter\@tempdima\pspdf@scale\@tempdima
+  \edef\pspdf@xscale{\expandafter\removePT@\the\@tempdima}%
+  \expandafter\@tempdima\pspdf@yscale\p@
+  \expandafter\@tempdima\pspdf@scale\@tempdima
+  \edef\pspdf@yscale{\expandafter\removePT@\the\@tempdima}%
+  %%
+  \expandafter\pspdf@w\pspdf@xscale\pspdf@w
+  \expandafter\pspdf@h\pspdf@yscale\pspdf@h
+  \expandafter\@tempdima\pspdf@objuse{#2}{w}%
+  \setlength\@tempdima{1pt*\ratio{\pspdf@w}{\@tempdima}}%
+  \edef\pspdf@xscale{\expandafter\removePT@\the\@tempdima}%
+  %
+  \expandafter\@tempdima\pspdf@objuse{#2}{h}%
+  \setlength\@tempdima{1pt*\ratio{\pspdf@h}{\@tempdima}}%
+  \edef\pspdf@yscale{\expandafter\removePT@\the\@tempdima}%
+  \ifpdf\else
+    \def\pspdf@pscolor{}%
+    \pspdf@parsecurrentcolor
+  \fi
+  \leavevmode
+  \hbox{\pspdf@drawObject{#2}\hskip\pspdf@w
+    \vrule width\z@ height\pspdf@h}%
+}
+\ifpdf
+  \def\pspdf@drawObject#1{%
+      \pdfliteral{q \pspdf@xscale\space 0 0 \pspdf@yscale\space 0 0 cm}%
+      \rlap{\vbox to \z@{\vss
+          \expandafter\pdfrefxform\pspdf@objuse{#1}{xformnum}}}%
+      \pdfliteral{Q}%
+  }
+\else
+  \def\pspdf@drawObject#1{%
+    \pstverb{
+      \pspdf@color\space
+      \pspdf@xscale\space \pspdf@yscale\space scale
+      PSPDF@obj@#1 }%
+  }
+\fi
+\def\pspdf@outputPDFobject#1{%
+  {%
+    \pspdf@loadOperators
+    \setbox0=\hbox{%
+      \pdfliteral{q}%
+      \pdfliteral{\pspdf@objuse{#1}{code}}%
+      \pdfliteral{Q}%
+      \expandafter\pspdf@w\pspdf@objuse{#1}{w}\relax
+      \expandafter\pspdf@h\pspdf@objuse{#1}{h}\relax
+      \hskip\pspdf@w \vrule width\z@ height\pspdf@h
+    }%
+    \pdfxform0\relax
+    \pspdf@objxdef{#1}{xformnum}{\the\pdflastxform}%
+  }%
+}
+\def\pspdf@outputPSobject#1{%
+  {%
+    %%\typeout{====== write PS object: #1}%
+    \pspdf@loadOperators
+    \edef\@psout{
+      /PSPDF@obj@#1 \pslbrace\space
+      gsave
+      \pspdf@objuse{#1}{code}
+      grestore
+      \psrbrace def
+    }%
+    \pspdf@psobj{\@psout}%
+  }%
+}
+\ifpdf
+  \let\pspdf@outputObject=\pspdf@outputPDFobject
+\else
+  \let\pspdf@outputObject=\pspdf@outputPSobject
+  \def\pspdf@xoutputObject#1{%
+    %\typeout{============= Need to output #1}%
+    \AtBeginDvi{%
+      \expandafter
+      \ifx\csname pspdf@output@#1\endcsname\relax
+      \else
+        \csname pspdf@output@#1\endcsname
+        \expandafter\gdef\csname pspdf@output@#1\endcsname{}%
+      \fi
+    }%
+  }%
+  \AtBeginDocument{\def\pspdf@xoutputObject#1{}}
+\fi
+
+\AtBeginDocument{%
+  \if@filesw
+    \immediate\write\@auxout{%
+      \noexpand\ifx\noexpand\pspdf@xoutputObject\noexpand\undefined
+      \noexpand\def\noexpand\pspdf@xoutputObject\string#1{}%
+      \noexpand\fi
+    }%
+  \fi
+}
+\endinput
+%%
+%% End of file `pspdf.sty'.

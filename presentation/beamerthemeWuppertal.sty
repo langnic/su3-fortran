@@ -1,0 +1,92 @@
+% Version 0.9.1
+% 0.9 - 30 Mar 2007
+% 0.9.1 - 01 Sep 2008
+
+\mode<presentation>
+
+\usepackage{pspdf}
+\usepackage{buw-logo}
+
+
+\usefonttheme{Wuppertal}
+\usecolortheme{Wuppertal}
+\useinnertheme{default}
+\useoutertheme{Wuppertal}
+
+\def\maketitle{\ifbeamer@inframe\titlepage\else\Wuppertal@maketitle\fi}
+\def\Wuppertal@maketitle{%
+  {%
+    \setbeamertemplate{section navigation in head/foot}[empty]%
+    \typeout{\expandafter\meaning\csname beamer@@tmpl@headline\endcsname}%
+    \setbeamertemplate{footline}[Wuppertal Title Page]%
+    \setbeamertemplate{headline}[Wuppertal Title Page]%
+    \beamer@calculateheadfoot
+    %% 
+    %% Manuell die linken/rechten Raender anpassen
+    \textwidth=\paperwidth
+    \beamer@leftsidebar\z@
+    \oddsidemargin=10pt
+    \evensidemargin=\oddsidemargin
+    \edef\Gm@lmargin{\the\oddsidemargin}%
+    \hoffset=-1in
+    \advance\textwidth-\oddsidemargin
+    \advance\textwidth-\evensidemargin
+    \begin{frame}
+      \nointerlineskip
+      \vbox to \z@{%
+        \vbox to 8.6cm{\hsize=\textwidth
+          \vss
+          \begin{center}
+            \mbox{\color{BUWLogoGray}\BUWLoewe[height=6cm]}%
+            %\mbox{\includegraphics[height=6cm]{hglion}}%
+          \end{center}
+          \vss
+        }\vss}%
+      \nointerlineskip
+      \vbox to 8.6cm{\hsize=\textwidth
+        \vss
+        \titlepage
+        \vss
+      }%
+    \end{frame}
+  }%
+  \beamer@calculateheadfoot
+}%
+
+
+\defbeamertemplate*{title page}{Wuppertal}[1][]
+{
+  \vbox{}
+  \vfill
+  \begin{centering}
+    \begin{beamercolorbox}[sep=8pt,center,#1]{title}
+      \usebeamerfont{title}\inserttitle\par%
+      \ifx\insertsubtitle\@empty%
+      \else%
+        \vskip0.25em%
+        {\usebeamerfont{subtitle}%
+          \usebeamercolor[fg]{subtitle}\insertsubtitle\par}%
+      \fi%     
+    \end{beamercolorbox}%
+    \vskip1em\par
+    \begin{beamercolorbox}[sep=8pt,center,#1]{author}
+      \usebeamerfont{author}\insertauthor
+    \end{beamercolorbox}
+    \ifx\insertinstitute\@empty
+    \else
+    \begin{beamercolorbox}[sep=8pt,center,#1]{institute}
+      \usebeamerfont{institute}\insertinstitute
+    \end{beamercolorbox}
+    \fi
+    \begin{beamercolorbox}[sep=8pt,center,#1]{date}
+      \usebeamerfont{date}\insertdate
+    \end{beamercolorbox}\vskip0.5em
+    %{\usebeamercolor[fg]{titlegraphic}\inserttitlegraphic\par}
+  \end{centering}
+  \vfill
+}
+
+
+
+
+\mode<all>

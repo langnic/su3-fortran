@@ -10,7 +10,6 @@ module mod_su3_field_var
     type, public :: su3_field_var
         !private    !TODO: make private again eventually - should be hidden from the user
         complex, allocatable :: data(:,:,:)[:]
-        integer, allocatable :: indices(:,:,:,:)    ! might be unnecessary
         logical :: conj = .false. ! compl. conj.
 
     contains
@@ -23,6 +22,7 @@ module mod_su3_field_var
         procedure :: init_zero
         generic :: operator (+) => add, add_glob_loc
         generic :: assignment (=) => assign
+        generic :: operator (.rtrc.) => real_trace
         !generic :: assignment (.inc.) => increment
     end type su3_field_var
 
@@ -32,7 +32,6 @@ module mod_su3_field_var
     type, public :: loc_su3_field_var
         !private    !TODO: make private again eventually - should be hidden from the user
         complex, allocatable :: data(:,:,:)
-        integer, allocatable :: indices(:,:,:,:)    ! might be unnecessary
         logical :: conj = .false. ! compl. conj.
     contains
         procedure :: add_loc
