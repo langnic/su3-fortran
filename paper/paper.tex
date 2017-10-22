@@ -21,6 +21,7 @@
 \usepackage{comment}
 \usepackage{amsmath}
 \usepackage{floatrow}
+\usepackage[margin=1.2in]{geometry}
 
 \usepackage[
     backend=biber,
@@ -53,6 +54,9 @@
 	pdfsubject={Lab report},
 	pdfkeywords={QCD, Lattice, Fortran, Coarrays}
 ]{hyperref}
+
+\usepackage{listings}
+\usepackage{color}
 
 \DefineBibliographyStrings{english}{andothers={et\ al\adddot}}
 %\DeclarePunctuationFormat[textcite]{nametitledelim}{\addspace}
@@ -88,6 +92,36 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{document}
+%\lstset{language=Fortran}
+\definecolor{mygreen}{rgb}{0,0.6,0}
+\definecolor{mygray}{rgb}{0.5,0.5,0.5}
+\definecolor{mymauve}{rgb}{0.58,0,0.82}
+
+\lstset{ %
+  backgroundcolor=\color{white},   % choose the background color; you must add \usepackage{color} or \usepackage{xcolor}; should come as last argument
+  basicstyle=\footnotesize,        % the size of the fonts that are used for the code
+  breakatwhitespace=false,         % sets if automatic breaks should only happen at whitespace
+  breaklines=true,                 % sets automatic line breaking
+  captionpos=b,                    % sets the caption-position to bottom
+  commentstyle=\color{mygreen},    % comment style
+  escapeinside={\%*}{*)},          % if you want to add LaTeX within your code
+  extendedchars=true,              % lets you use non-ASCII characters; for 8-bits encodings only, does not work with UTF-8
+  %frame=single,	                   % adds a frame around the code
+  keepspaces=true,                 % keeps spaces in text, useful for keeping indentation of code (possibly needs columns=flexible)
+  keywordstyle=\color{blue},       % keyword style
+  language=Fortran,                 % the language of the code
+  numbers=left,                    % where to put the line-numbers; possible values are (none, left, right)
+  numbersep=5pt,                   % how far the line-numbers are from the code
+  numberstyle=\tiny\color{mygray}, % the style that is used for the line-numbers
+  rulecolor=\color{black},         % if not set, the frame-color may be changed on line-breaks within not-black text (e.g. comments (green here))
+  showspaces=false,                % show spaces everywhere adding particular underscores; it overrides 'showstringspaces'
+  showstringspaces=false,          % underline spaces within strings only
+  showtabs=false,                  % show tabs within strings adding particular underscores
+  stepnumber=1,                    % the step between two line-numbers. If it's 1, each line will be numbered
+  stringstyle=\color{mymauve},     % string literal style
+  tabsize=4,	                   % sets default tabsize to 2 spaces
+  title=\lstname                   % show the filename of files included with \lstinputlisting; also try caption instead of title
+}
 
 %\linenumbers
 
@@ -124,10 +158,13 @@
 \subsection{The QCD action}
 
 
+\section{The Metropolis Algorithm}
+
+
 
 % TODO: perhaps table with Fortran coarray routines?
 
-\section{Fortran implementation}
+\section{Design choices}
 
 This section discusses an implementation of the quenched approximation of QCD on the lattice using coarrays for data parallelism.
 
@@ -135,10 +172,179 @@ This section discusses an implementation of the quenched approximation of QCD on
 
 Coarrays provide a way to distribute data accross multiple program instances while retaining a concise syntax that abstracts the underlying inter-process or network communication. Formerly an extension of Fortran 95, coarrays are now part of the Fortran 2008 standard. Coarrays are variables with one or several \emph{codimensions} and indices referencing data stored by another program instance, called \emph{image}. \emph{Images} represent copies of the program that run asynchronously and can possess further independent local variables. The coarray entries can be accessed from every image by specifying the respective \emph{coindex} representing the image, where the data is stored. The size of the codimension is determined at runtime from the number of running images. The standard provides for additional methods that enable the user to obtain the number of images and the index of the current image and to introduce a break point to synchronize images. The coarray support in the GNU Fortran compiler is based on the \emph{OpenCoarrays} \cite{opencoarrays} library which in turn is based on the Message Passing Interface (MPI).
 
-\subsection{Design choices}
+\subsection{Shortcomings of the current coarray implementation}
+% no pointers... blabla
+Lorem ipsum dolor sit amet, consectetur et florabibimus sibet insipitur.
 
-\subsection{Issues}
 
+\subsection{Overview and general ideas}
+
+
+
+\section{Implementation}
+
+
+\subsection{Types}
+
+\subsubsection*{Gauge field}
+% global data corarray
+% local index array
+% initialization
+
+\begin{lstlisting}%[caption=Test]
+
+type, public :: gauge_field
+    integer, allocatable :: indices(:,:,:,:,:,:)
+    logical :: tmp
+    integer :: dir
+    integer :: par
+    integer :: x_low, x_up, y_low, y_up, z_low, z_up, t_low, t_up
+    integer :: nx, ny, nz, nt
+contains
+    
+    ! ...
+    
+end type gauge_field
+\end{lstlisting}
+
+
+\subsubsection*{Field variables}
+% local data
+% field var types
+
+
+\subsection{Operators}
+
+\subsubsection*{Select and shift}
+
+\begin{lstlisting}
+function select (a, b) result (tmp)
+    class(gauge_field), intent(in) :: a
+    integer, dimension(2), intent(in) :: b
+    type(gauge_field) :: tmp
+        
+    call a%copy_shift(tmp, 0, 0)
+    tmp%par = b(1)
+    tmp%dir = b(2)
+    tmp%tmp = .true.
+end function
+\end{lstlisting}
+
+\begin{lstlisting}
+function shift (a, b) result (tmp)
+    class(gauge_field), intent(in) :: a
+    integer, dimension(2), intent(in) :: b
+    type(gauge_field) :: tmp
+
+    call a%copy_shift(tmp, b(1), b(2))
+    tmp%tmp = .true.
+end function
+\end{lstlisting}
+
+\subsubsection*{Arithmetic and logical operators}
+
+\begin{lstlisting}
+function multiply_fv(a, b) result (res)
+    
+    ! ...
+
+    idx = 1
+    do d = d_low, d_up
+        do i = a%t_low, a%t_up
+            do j = a%z_low, a%z_up
+                do k = a%y_low, a%y_up
+                    do l = a%x_low-1+step_size, a%x_up, step_size
+                        if (d == 0) then
+                            da = abs(a%dir)
+                        else
+                            da = d
+                        end if
+                        if (step_size == 2) then
+                            la = l-abs(mod(i+j+k,2)-a%par)
+                        else
+                            la = l
+                        end if
+
+                        res%data(:,:,idx) = multSu3( &
+                        data( :,:,a%indices(0,la,k,j,i,da)) &
+                        [a%indices(1,la,k,j,i,da)], &
+                        (a%dir < 0), &
+                        b%data(:,:,idx), &
+                        b%conj )
+                        idx = idx + 1
+
+                    end do
+                end do
+           end do
+        end do
+    end do
+
+end function
+\end{lstlisting}
+
+\subsection{The metropolis module}
+
+\begin{lstlisting}
+function staple(u, p, d)
+    
+    ! ...
+
+    call staple%init_zero(s)
+    do i = 1, 4
+        if (i /= d) then
+            call staple%increment( &
+                (u.sel.[p,i]) &
+                * (u.shift.[i,1].sel.[p,d]) &
+                * (u.shift.[d,1].sel.[p,-i]) &
+                + (u.shift.[i,-1].sel.[p,-i]) &
+                * (u.shift.[i,-1].sel.[p,d]) &
+                * (u.shift.[i,-1].shift.[d,1].sel.[p,i]) &
+                )
+        end if
+    end do
+
+end function staple
+\end{lstlisting}
+
+\begin{lstlisting}
+subroutine metro(u, eps, beta, acc)
+
+    ! ...
+
+    ! iterate over both parities and all directions
+    do p = 1,2
+        do d = 1,4
+
+        ! calc. staple
+        stp = staple(u,p,d)
+        stp%conj = .true.
+
+        ! generate new link
+        call random_number(rnd1)
+        call random_number(rnd2)
+        if (rnd1 >= 0.5) then
+            update_tab(ceiling(rnd2*100))%conj = .true.
+        else
+            update_tab(ceiling(rnd2*100))%conj = .false.
+        end if
+
+        new_link = (u.sel.[p,d]) * update_tab(ceiling(rnd2*100))
+
+        ! calculate action change
+        delta_s = -beta / 3.0 * .rtrc.((new_link - (u.sel.[p,d])) * stp)
+
+        ! accept with some prob. dep. on action
+        call rnd_field%init_rnd(s)
+        call u%update(p, d, new_link, (rnd_field <= exp(-delta_s)), acc_count)
+        sync all
+
+        end do
+    end do
+
+    acc = real(acc_count) / real((s*8))
+
+end subroutine metro
+\end{lstlisting}
 
 \section{Sample measurement}
 

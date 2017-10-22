@@ -753,6 +753,15 @@ contains
 
     end subroutine
 
+    !! project matrices back to unitarity
+    subroutine unitarize_field()
+        integer :: i
+
+        do i = 1, size(data)/9
+            call unitarize(data(:,:,i))
+        end do
+    end subroutine
+
 
     !! initialize the gauge field - set dimensions
     !! nz*nt has to be a multiple of the number of nodes

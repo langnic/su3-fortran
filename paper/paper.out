@@ -5,8 +5,13 @@
 \BOOKMARK [2][]{subsection.0.2.1}{The path integral quantization}{section.0.2}% 5
 \BOOKMARK [2][]{subsection.0.2.2}{Discretization on the lattice}{section.0.2}% 6
 \BOOKMARK [2][]{subsection.0.2.3}{The QCD action}{section.0.2}% 7
-\BOOKMARK [1][]{section.0.3}{Fortran implementation}{section*.1}% 8
-\BOOKMARK [2][]{subsection.0.3.1}{Fortran coarrays}{section.0.3}% 9
-\BOOKMARK [2][]{subsection.0.3.2}{Design choices}{section.0.3}% 10
-\BOOKMARK [2][]{subsection.0.3.3}{Issues}{section.0.3}% 11
-\BOOKMARK [1][]{section.0.4}{Sample measurement}{section*.1}% 12
+\BOOKMARK [1][]{section.0.3}{The Metropolis Algorithm}{section*.1}% 8
+\BOOKMARK [1][]{section.0.4}{Design choices}{section*.1}% 9
+\BOOKMARK [2][]{subsection.0.4.1}{Fortran coarrays}{section.0.4}% 10
+\BOOKMARK [2][]{subsection.0.4.2}{Shortcomings of the current coarray implementation}{section.0.4}% 11
+\BOOKMARK [2][]{subsection.0.4.3}{Overview and general ideas}{section.0.4}% 12
+\BOOKMARK [1][]{section.0.5}{Implementation}{section*.1}% 13
+\BOOKMARK [2][]{subsection.0.5.1}{Types}{section.0.5}% 14
+\BOOKMARK [2][]{subsection.0.5.2}{Operators}{section.0.5}% 15
+\BOOKMARK [2][]{subsection.0.5.3}{The metropolis module}{section.0.5}% 16
+\BOOKMARK [1][]{section.0.6}{Sample measurement}{section*.1}% 17

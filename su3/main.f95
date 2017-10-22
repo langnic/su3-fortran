@@ -10,80 +10,84 @@ program main
 
 
     type(gauge_field) :: u
-    type(su3_field_var) :: v
-    type(real_field_var) :: r, er
-    !write(*,*) num_images()
-    !write(*,*) this_image()
-    complex :: res(3,3), res2(3,3)
     real :: acc = 0
-    real :: sw
-    integer :: i
+    real :: beta, beta_stop, beta_step, eps, mean, sigma
+    real, allocatable :: sp(:)
+    integer :: i, st = 0, n_measure, n_thermal
     real :: scnrm2
+    logical :: output
 
 
     call random_seed()
-    call u%initialize(12,12,12,12,.false.)
+    call u%initialize(16,16,16,16,.false.)
 
 
-    !! Some tests
+    ! file output
+    open(20, file='plaquette.txt', iostat=st)
+    if (st /= 0) error stop 'Failed to open file'
 
-    if (this_image() == 1) then
-        !data(:,:,u%indices(0,1,1,1,1,1))[u%indices(1,1,1,1,1,1)] = reshape((/ 2, 0, 1, 0, 2, 0, 1, 0, 2 /), (/ 3, 3 /))
-        !data(:,:,u%indices(0,2,2,3,3,3))[u%indices(1,2,2,3,3,3)] = reshape((/ 4, 0, 3, 0, 4, 0, 3, 0, 4 /), (/ 3, 3 /))
+    ! initial value for beta and epsilon
+    beta = 0.2
+    beta_stop = 8.0
+    beta_step = 0.2
+    eps = 0.3
+    n_measure = 100
+    n_thermal = 100
+    output = .true.
 
-        !data(:,:,u%indices(0,3,1,1,1,1))[u%indices(1,3,1,1,1,1)] = reshape((/ 2, 0, 3, 0, 2, 0, 1, 0, 2 /), (/ 3, 3 /))
-        !data(:,:,u%indices(0,4,2,3,3,3))[u%indices(1,4,2,3,3,3)] = reshape((/ 4, 0, 5, 0, 4, 0, 6, 0, 4 /), (/ 3, 3 /))
+    allocate(sp(n_measure))
+    print *, 'Start run'
 
-        !print *, 'idx1: ', u%indices(0,1,1,1,1,1), ', co-idx1: ', u%indices(1,1,1,1,1,1)
-        !print *, 'idx2: ', u%indices(0,2,2,3,3,3), ', co-idx2: ', u%indices(1,2,2,3,3,3)
-    end if
+    do
+        print *, 'Beta = ', beta
 
+        ! Thermalize
+        print *, 'Thermalize...'
+        do i = 1, n_thermal
+            call metro(u, eps, beta, acc)
+            !if (this_image() == 1) print *, 'Iteration: ', i, 'Acc: ', acc
+        end do
 
-    !v = ((u.sel.[0,1]) - (u.sel.[0,2])) * ((u.shift.[1,1].shift.[2,1].shift.[4,2].shift.[3,2].sel.[0,-3]) - (u.sel.[0,2]))
-    !r = v%real_trace()
-    !er = exp(-r)
+        ! Measure
+        print *, 'Measure...'
+        do i = 1, n_measure
+            call metro(u, eps, beta, acc)
+            call metro(u, eps, beta, acc)
+            sp(i) = plaquette(u)
+            !if (this_image() == 1) print *, 'Iteration: ', i, 'Acc: ', acc, ', s_wilson: ', sp(i)
+        end do
+        print *, 'Acceptance: ', acc
 
-    !v = (u.sel.[0,3]) * (u.sel.[1,-4].shift.[1,1]) * (u.sel.[0,2])
-    if (this_image() == 1) then
-    !    res = v%data(:,:,1)![1]
-    !    res2 = v%data(:,:,2)![1]
-    !    print *, res(1,:)
-    !    print *, res(2,:)
-    !    print *, res(3,:)
-    !    print *
-    !    print *, res2(1,:)
-    !    print *, res2(2,:)
-    !    print *, res2(3,:)
-    !    print *
-    !    print *, r%data(1)
-    !    print *, r%data(2)
-    !    print *
-    !    print *, er%data(1)
-    !    print *, er%data(2)
-    end if
-
-    ! 10 metropolis sweeps
-
-    sw = (s_wilson(u)-1)*(-1)
-    print *, 'Acc: ', acc, ', s_wilson: ', sw
-
-    do i = 1, 100
-        call metro(u, 0.3, 6.0, acc)
-        sw = (s_wilson(u)-1)*(-1)
-
+        ! Calc. mean and stat. error, write to file
+        sync all
         if (this_image() == 1) then
-            if (mod(i,50) == 0) then
-                print *, 'Iteration: ', i, 'Acc: ', acc, ', s_wilson: ', sw
-                !print *, 'Orthogonal: ', dot_product(data(1,:,1), data(2,:,1)), &
-                !    dot_product(data(1,:,1), data(3,:,1)), &
-                !    dot_product(data(2,:,1), data(3,:,1))
-                !print *, 'Normal: ', scnrm2(3,data(1,:,1),1), scnrm2(3,data(2,:,1),1), &
-                !    scnrm2(3,data(3,:,1),1)
-                !a(:,:) = update_tab(ceiling(rnd2*100))%data(:,:,1)
-                !print *, 'Det.: ', a(1,1) * a(2,2) * a(3,3) + a(1,2) * a(2,3) * a(3,1) + a(1,3) * a(2,1) * a(3,2) &
-                !        - a(1,3) * a(2,2) * a(3,1) - a(1,1) * a(2,3) * a(3,2) - a(1,2) * a(2,1) * a(3,3)
+            print *, 'Calculate mean and sigma...'
+            mean = sum(sp)/size(sp)
+            sigma = sqrt(sum( (sp - mean)**2 )/size(sp))
+            write(20, *) beta, mean, sigma
+
+            if (output) then
+                print *, 'Mean: ', mean, ' sigma: ', sigma
+                print *, 'Orthogonal: ', dot_product(data(1,:,1), data(2,:,1)), &
+                    dot_product(data(1,:,1), data(3,:,1)), &
+                    dot_product(data(2,:,1), data(3,:,1))
+                print *, 'Normal: ', scnrm2(3,data(1,:,1),1), scnrm2(3,data(2,:,1),1), &
+                    scnrm2(3,data(3,:,1),1)
             end if
+
         end if
+
+        call unitarize_field()
+
+        ! increase beta
+        beta = beta + beta_step
+
+        ! break loop when beta_stop is reached
+        if (beta > beta_stop) exit
     end do
+
+    print *, 'Done'
+
+    close(20)
 
 end program main

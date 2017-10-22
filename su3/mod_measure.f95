@@ -8,9 +8,10 @@ module mod_measure
 
     contains
 
-    function s_wilson(u)
+    !! calculates the average plaquette of the current lattice
+    function plaquette(u)
         type(gauge_field), intent(in) :: u
-        real :: s_wilson
+        real :: plaquette
         type(real_field_var) :: sp
         integer :: i,j
 
@@ -23,9 +24,18 @@ module mod_measure
                     * (u.shift.[j,1].sel.[-1,-i]) * (u.sel.[-1,-j]) ))
             end do
         end do
+        sync all
 
-        s_wilson = (6.0 - sp%field_avg()/3.0) / 6.0
+        plaquette = (sp%field_avg()/3.0) / 6.0
 
+    end function
+
+    !! calculates the wilson action
+    function s_wilson(u, beta)
+        type(gauge_field), intent(in) :: u
+        real, intent(in) :: beta
+        real :: s_wilson
+        s_wilson = beta * (1 - plaquette(u))
     end function
 
 end module mod_measure
