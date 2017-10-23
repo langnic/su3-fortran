@@ -5,7 +5,8 @@
 % choose options for [] as required from the list
 % in the Reference Guide
 
-\usepackage{mathptmx}       % selects Times Roman as basic font
+\usepackage[utf8]{inputenc}
+%\usepackage{mathptmx}       % selects Times Roman as basic font
 \usepackage{helvet}         % selects Helvetica as sans-serif font
 \usepackage{courier}        % selects Courier as typewriter font
 \usepackage{type1cm}        % activate if the above 3 fonts are not available on your system
@@ -14,7 +15,7 @@
 \usepackage{multicol}        % used for the two-column index
 \usepackage[bottom]{footmisc}% places footnotes at page bottom
 %\usepackage{caption}
-\usepackage{subcaption}
+\usepackage[labelfont=bf]{subcaption}
 \captionsetup{compatibility=false}
 \usepackage{lineno}
 \usepackage{savefnmark}
@@ -26,7 +27,7 @@
 
 \usepackage[
     backend=biber,
-    style=authoryear-icomp,
+    style=numeric-comp,
     sortlocale=de_DE,
     natbib=true,
     url=true, 
@@ -72,6 +73,9 @@
 \makeatother
 
 \floatsetup[table]{capposition=top}
+\captionsetup[figure]{labelfont=bf,textfont={it}}
+\captionsetup[table]{labelfont=bf,textfont={it}}
+\captionsetup[lstlisting]{labelfont=bf,textfont={it}}
 
 
 \makeindex             % used for the subject index
@@ -159,24 +163,27 @@
 \subsection{The QCD action}
 
 
-\section{The Metropolis Algorithm}
+\section{The Metropolis algorithm}
 
-
+In order to compute the vacuum expectation value of an operator $O$ on a lattice, the integral
+\begin{equation}
+\langle O \rangle = \frac 1 Z \int \mathcal{D}[U] e^{-S_G[U]} O[U]
+\end{equation}
+has to be evaluated. 
 
 % TODO: perhaps table with Fortran coarray routines?
 
-\section{Design choices}
+\section{Overview and general concept}
 
 This section discusses the general design ideas behind the coarray-based quenched QCD implementation presented in this report.
 
-\subsection{Fortran coarrays}
+\subsection{Fortran coarrays and shortcomings}
 Coarrays provide a way to distribute data accross multiple program instances while retaining a concise syntax that abstracts the underlying inter-process or network communication. Formerly an extension of Fortran 95, coarrays are now part of the Fortran 2008 standard. Coarrays are variables with one or several \emph{codimensions} and indices referencing data stored by another program instance, called \emph{image}. \emph{Images} represent copies of the program that run asynchronously and can possess further independent local variables. The coarray entries can be accessed from every image by specifying the respective \emph{coindex} representing the image, where the data is stored. The size of the codimension is determined at runtime from the number of running images. The standard provides for additional methods that enable the user to obtain the number of images and the index of the current image and to introduce a break point to synchronize images. The coarray support in the GNU Fortran compiler is based on the \emph{OpenCoarrays} \cite{opencoarrays} library which in turn is based on the Message Passing Interface (MPI).
 
-\subsection{Shortcomings of the current coarray implementation}
 The current implementation of coarrays in Fortran suffers from a number of shortcomings. Most notably, there is no notion of coarray pointers. This makes data encapsulation difficult. A new proposal called Coarray Fortran 2.0 \cite{coarr2.0} addresses this and other issues, but it is not clear whether and when it will become part of the Fortran standard. Therefore, work-arounds need to be found.
 
-\subsection{Overview and general ideas}
-The goal of this 
+\subsection{Design choices}
+The goal of this implementation of quenched QCD is to provide an easy-to-use API, where the actual storage and distribution of data accross images is mainly hidden from the user. Types (classes) that offer a global view on fields and field variables will be implemented, i.e. operations will be performed on the field as a whole and not individual lattice sites. To work with operators depending on nearest neighbours, shift operators will be provided. To overcome limitations associated with coarrays, such as prohibited coarray return values, local versions of certain types will be used. The gauge field itself will be implemented as a wrapper around a global data variable (with the assumption that only ever one field instance will be needed).
 
 
 \section{Implementation}
@@ -276,7 +283,7 @@ end subroutine
 \subsubsection*{Field variables}
 % local data
 % field var types
-Field variable types possess data members which are either arrays or coarrays of a given type and represent the results of operations on \emph{gauge\_fields} and other field variables. They do not have any notion of spatial and temporal indices or direction. This is intended since the operands of a binary operator creating the field variable could have different parities or directions. Therefore the indices of the result would not be well defined. Hence, field variables are only meaningful in operations with gauge fields or reductions, such as sums or mean values.
+Field variable types possess data members which are either arrays or coarrays of a given type and represent the results of operations on \emph{gauge\_fields} and other field variables. They do not have any notion of spatial and temporal indices or direction. This is intended since the operands of a binary operator creating the field variable could have different parities, directions or shifts. Therefore the indices of the result would not be well defined. Hence, field variables are only meaningful in operations with gauge fields or reductions, such as sums or mean values.
 Currently 3 types of field variables are implemented:
 \begin{itemize}
 	\item SU(3)-matrix-valued: \emph{su3\_field\_var}
@@ -300,7 +307,7 @@ contains
     generic :: operator (.rtrc.) => real_trace
 end type su3_field_var
 \end{lstlisting}
-Additionally each field variable type comes in a local version, meaning that the data member is an arrray instead of a coarray. This is necessary since derived types containing coarrays cannot be function return values. An overloaded assignment operator on the (global) field variable types allows the assignment of local field variables to (global) field variables, i.e. the array is copied into the local part of the coarray on every image. Reductions are only possible on (global) field variables for obvious reasons. Increment and initialization routines are defined for the \emph{su3\_field\_var} and \emph{real\_field\_var} types. The \lstinline{.rtrc.}{} operator calculates the real part of the trace on an \emph{su3\_field\_var} and returns a \emph{real\_field\_var}.
+Additionally, each field variable type comes in a local version, meaning that the data member is an arrray instead of a coarray. This is necessary since derived types containing coarrays cannot be function return values. An overloaded assignment operator on the (global) field variable types allows the assignment of local field variables to (global) field variables, i.e. the array is copied into the local part of the coarray on every image. Reductions are only possible on (global) field variables for obvious reasons. Increment and initialization routines are defined for the \emph{su3\_field\_var} and \emph{real\_field\_var} types. The \lstinline{.rtrc.}{} operator calculates the real part of the trace on an \emph{su3\_field\_var} and returns a \emph{real\_field\_var}.
 
 
 \subsection{Operators}
@@ -490,7 +497,7 @@ end subroutine metro
 
 
 \pagebreak
-\printbibliography
+%\printbibliography
 
 
 \end{document}
