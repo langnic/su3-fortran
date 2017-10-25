@@ -1,2 +1,3 @@
 \beamer@endinputifotherversion {3.36pt}
 \select@language {ngerman}
+\beamer@sectionintoc {3}{Das Metropolismodul}{18}{0}{1}

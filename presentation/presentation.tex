@@ -1,7 +1,9 @@
-\documentclass{beamer}
+\documentclass[10pt]{beamer}
 
 \usetheme{metropolis}
+\geometry{paperwidth=140mm,paperheight=105mm}
 
+\usepackage{lipsum}
 %\usepackage%[format=plain,indention=1cm,scriptsize,font=sf ,labelfont=bf,
 %  nooneline]{caption}
 \usepackage{subcaption}
@@ -10,24 +12,55 @@
 \usepackage[utf8x]{inputenc}
 \usepackage{verbatim}
 \usepackage{epstopdf}
-\usepackage{feynmp}
+\usepackage{amsmath}
+\usepackage{floatrow}
+%\usepackage{feynmp}
 %\usepackage[floatrow]{chemstyle}
+\usepackage{mathbbol}
+\usepackage{listings}
+\usepackage{color}
 
 \DeclareGraphicsRule{*}{mps}{*}{}
 
 \begin{document}
 
-\title{\vspace*{2.0cm}A quenched QCD implementation using Fortran coarrays}
+\definecolor{mygreen}{rgb}{0,0.6,0}
+\definecolor{mygray}{rgb}{0.5,0.5,0.5}
+\definecolor{mymauve}{rgb}{0.58,0,0.82}
+
+\lstset{ %
+  backgroundcolor=\color{white},   % choose the background color; you must add \usepackage{color} or \usepackage{xcolor}; should come as last argument
+  basicstyle=\scriptsize,        % the size of the fonts that are used for the code
+  breakatwhitespace=false,         % sets if automatic breaks should only happen at whitespace
+  breaklines=true,                 % sets automatic line breaking
+  captionpos=t,                    % sets the caption-position to top
+  commentstyle=\color{mygreen},    % comment style
+  escapeinside={\%*}{*)},          % if you want to add LaTeX within your code
+  extendedchars=true,              % lets you use non-ASCII characters; for 8-bits encodings only, does not work with UTF-8
+  %frame=single,	                   % adds a frame around the code
+  keepspaces=true,                 % keeps spaces in text, useful for keeping indentation of code (possibly needs columns=flexible)
+  keywordstyle=\color{blue},       % keyword style
+  language=Fortran,                 % the language of the code
+  numbers=left,                    % where to put the line-numbers; possible values are (none, left, right)
+  numbersep=5pt,                   % how far the line-numbers are from the code
+  numberstyle=\tiny\color{mygray}, % the style that is used for the line-numbers
+  rulecolor=\color{black},         % if not set, the frame-color may be changed on line-breaks within not-black text (e.g. comments (green here))
+  showspaces=false,                % show spaces everywhere adding particular underscores; it overrides 'showstringspaces'
+  showstringspaces=false,          % underline spaces within strings only
+  showtabs=false,                  % show tabs within strings adding particular underscores
+  stepnumber=1,                    % the step between two line-numbers. If it's 1, each line will be numbered
+  stringstyle=\color{mymauve},     % string literal style
+  tabsize=4,	                   % sets default tabsize to 2 spaces
+  title=\lstname                   % show the filename of files included with \lstinputlisting; also try caption instead of title
+}
+
+\title{A quenched QCD implementation using Fortran coarrays}
 \author[Nicolas Lang]{Nicolas Lang\\Betreuer: Christian Hoelbling}
 \institute{
 Bergische Universit\"at Wuppertal\\
-%\includegraphics[width=0.2\textwidth]{img/bmbf.png}
 }
 \date{\today}
 
-%\titlegraphic{\includegraphics[width=1.0\textwidth]{img/FSP103.png}%\hspace*{4.75cm}~%
-%   %\includegraphics[width=2cm]{logopolito}
-%}
 
 \maketitle
 
@@ -55,13 +88,445 @@ Bergische Universit\"at Wuppertal\\
 
 
 
-%\section*{}
+\section*{QCD auf dem Gitter}
 
 \begin{frame}
-    \frametitle{Einführung: QCD}
+    \frametitle{Einführung: QCD auf dem Gitter}
+    \begin{itemize}
+        \item Bietet Möglichkeit nicht-störungstheoretischer Berechnungen in QCD
+        \item Regularisierung durch diskretisierte Raumzeit
+        \item Gitterkonstante entspricht der Cut-off Energie im Impulsraum
+        \item Niedrige Energieskalen zugänglich, bspw. Hadronenmassen
+    \end{itemize}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Das Pfadintegral}
+    \begin{itemize}
+    	\item Pfadintegralformalismus:
+    	\begin{equation}
+			Z = \int \mathcal{D}\Phi e^{iS[\Phi]}
+		\end{equation}
+    	\item Durch Einführung imaginärer Zeitkoordinate (Wick-Rotation):\\
+    	$\Rightarrow$ Minkowski-Metrik $\rightarrow$ euklidische Metrik\\
+    	$\Rightarrow$ komplexe Phase $\rightarrow$ Boltzmann-Faktor\\
+    	$\Rightarrow$ Verbindung von Quantenfeldtheorie und stat. Mechanik
+    	\item Diskretisierung der Raumzeit: 4-dimensionales Gitter
+        \item Diskretisiertes Pfadintegral im euklidischen Raum:
+        \begin{equation}
+			Z = \int \mathcal{D}[\Phi] e^{-S_E[\Phi]}
+		\end{equation}
+		Integrationsmaß:
+		\begin{equation}
+			\mathcal{D}[\Phi] = \prod_{n \in \Lambda} d\Phi(n)
+		\end{equation}
+    \end{itemize}
+\end{frame}
+
+\begin{frame}
+    \frametitle{QCD: Gluon Wirkung}
+    \begin{itemize}
+    	\item Hier: Beschränkung auf Eichfelder / keine Fermionen (quenched QCD)
+        \item Einführung von Eich-Links zwischen den Gitterpunkten
+        \item Gluon Wirkung:
+        \begin{equation}
+\label{eq:plaq}
+S_G[U] = \frac {\beta} 3 \sum_{n \in \Lambda} \sum_{\mu < \nu} \Re\ \text{tr} [\mathbb{1} - U_{\mu \nu}(n)]
+\end{equation}
+		\item Plakette:
+		\begin{equation}
+			U_{\mu \nu}(n) = U_{\mu}(n) U_{\nu}(n+\hat{\mu}) U_{\mu}(n+\hat{\nu})^{\dagger} U_{\nu}(n)^{\dagger}
+		\end{equation}
+		\item Erwartungswerte von Operatoren:
+		\begin{equation}
+			\langle O \rangle = \frac 1 Z \int \mathcal{D}[U] e^{-S_G[U]} O[U]
+		\end{equation}
+		\item $4N$-dimensionales Integral $\Rightarrow$ keine exakte Berechnung möglich
+    \end{itemize}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Monte-Carlo Integration}
+    \begin{itemize}
+        \item Approximation des Integrals durch ''Stichprobenmittelwert'' zufällig generierter Funktionswerte des Integranden
+        \item Zufällige Konfigurationen sollten der Wahrscheinlichkeitsdichte
+        \begin{equation}
+dP(U) = \frac{e^{-S[U]}\mathcal{D}[U]}{\int \mathcal{D}[U] e^{-S[U]}}
+\end{equation}
+zufolge generiert werden (Importance-Sampling)
+		\item Erwartungswerte:
+		\begin{equation}
+\langle O \rangle = \lim_{N \rightarrow \infty} \frac{1}{N} \sum_{n = 1}^N O[U_n]
+\end{equation}
+		\item Wie können solche Konfigurationen erzeugt werden?
+    \end{itemize}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Metropolis-Algorithmus}
+    \begin{itemize}
+        \item Metropolis-Algorithmus: implementiert Markov-Kette zur iterativen Erzeugung der Konfigurationen durch Updates der alten Konfiguration
+        \item Kurzformulierung:
+        \begin{enumerate}
+        	\item Starte bei beliebiger Konfiguration, wähle einen Link $U_{\mu}(n)$ und erzeuge Updatekandidaten $U_{\mu}(n)'$
+        	\item Berechne die Summe der \emph{Staples}
+        	\begin{align}
+				A = \sum_{i=1}^6 P_i = \sum_{\nu \neq \mu} \big( &U_{\nu}(n+\hat{\mu}) U_{\mu}(n+\hat{\nu})^{\dagger} U_{\nu}(n)^{\dagger}\\
+		+ &U_{\nu}(n+\hat{\mu}-\hat{\nu})^{\dagger} U_{\mu}(n-\hat{\nu})^{\dagger} U_{\nu}(n-\hat{\nu}) \big)
+			\end{align}
+			und damit die Wirkungsänderung
+			\begin{equation}
+				\Delta S = -\frac{\beta}{N} \Re\ \text{tr} [ (U_{\mu}(n)' - U_{\mu}(n)) A]
+			\end{equation}
+			\item Akzeptiere Link-Update, falls $r \leq \exp(-\Delta S)$, wobei $r \in [0,1)$ Zufallszahl
+			\item Wiederhole diese Schritte mit der neuen Konfiguration
+        \end{enumerate}
+    \end{itemize}
+\end{frame}
+
+
+
+\section*{Implementierung}
+
+
+\begin{frame}[fragile]
+    \frametitle{Einschub: Fortran Coarrays}
+    \begin{itemize}
+        \item Bestandteil des Fortran 2008-Standards
+        \item Variablen mit \emph{Codimension}
+        \item \emph{Images: } parallel ausgeführte Programminstanzen
+        \item Beispiel: \lstinline[basicstyle=\normalsize]{real :: x(5)[*]}{}\\
+        	$*$ ist ein Platzhalter für die Anzahl der Images, wird zur Laufzeit festgelegt
+        \item Unterstützung in GNU-Fortran 5 - für mehrere Images wird Bibliothek für Datenaustausch benötigt
+        \item \emph{OpenCoarrays}\footnotemark ist eine solche
+        \item Einschränkungen: u.a. keine Coarray-Pointer, keine Coarray-Returnvalues
+    \end{itemize}
+    \footnotetext{OpenCoarrays: Open-source Transport Layers Supporting Coarray Fortran Compilers}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Konzept}
+    \begin{itemize}
+        \item Ziele:
+        \begin{itemize}
+        	\item Implementierung der Quenched-QCD mit Coarrays
+        	\item einfach zu benutzende API - globale ''Feldperspektive''        	
+		\end{itemize}
+		\item Umsetzung durch:
+        \begin{itemize}
+        	\item Typen (Klassen) für Felder und Feldvariablen die als Wrapper für (Co-)Arrays fungieren
+        	\item überladene Operatoren für arithmetische Operationen
+        	\item Select- und Shiftoperatoren für Felder, um Linkrichtung/-parität und Versatz festzulegen
+        	\item Parallel ausgeführte Updates/Operationen auf ausgewählten Links
+        	\item Günstige Speicherreihenfolge der Matrizen
+		\end{itemize} 
+    \end{itemize}
+\end{frame}
+
+\subsection*{Typen}
+
+
+\begin{frame}[fragile]
+    \frametitle{Eichfeld-Typ}
+\begin{minipage}{0.48\linewidth}
+\begin{lstlisting}
+complex, allocatable :: &
+data(:,:,:)[:]
+
+type, public :: gauge_field
+    integer, allocatable :: indices(:,:,:,:,:,:)
+    logical :: tmp
+    integer :: dir
+    integer :: par
+    integer :: x_low, x_up, y_low, y_up, z_low, z_up, t_low, t_up
+    integer :: nx, ny, nz, nt
+contains
+    ! ...
+    procedure :: initialize
+    procedure :: update
+    ! ...
+end type gauge_field
+\end{lstlisting}
+\end{minipage}
+    \hfill
+    \begin{minipage}{0.48\linewidth}
+        \begin{itemize}
+            \item Globales data Coarray (unschön aber schwer zu vermeiden)
+            \item \emph{gauge\_field}-Typ als Wrapper
+            \item \emph{dir} und \emph{par} als Flags für Richtung und Parität
+            \item Ausdehnung auf aktuellem Image
+            \item \emph{indices}-Array assoziiert euklidische- und Richtungsindizes mit (Co-)Arrayindizes
+            \item Speicherreihenfolge (innen nach außen): $x,y,z,t,par,dir$
+        \end{itemize}
+    \end{minipage}
+\end{frame}
+
+%\begin{frame}[fragile]
+%    \frametitle{Eichfeld-Typ: Initialisierung}
+%    \begin{itemize}
+%        \item Jo...
+%    \end{itemize}
+%\end{frame}
+
+\begin{frame}[fragile]
+    \frametitle{Feldvariablen-Typen}
+    \begin{minipage}{0.48\linewidth}
+    \begin{lstlisting}
+type, public :: su3_field_var
+    complex, allocatable :: data(:,:,:)[:]
+    logical :: conj = .false.
+contains
+    procedure :: add
+    procedure :: add_glob_loc
+    procedure :: assign
+    procedure :: increment
+    procedure :: real_trace
+    procedure :: init_rnd
+    procedure :: init_zero
+    generic :: operator (+) => add, add_glob_loc
+    generic :: assignment (=) => assign
+    generic :: operator (.rtrc.) => real_trace
+end type su3_field_var
+\end{lstlisting}
+\end{minipage}
+    \hfill
+    \begin{minipage}{0.48\linewidth}
+        \begin{itemize}
+        	\item repräsentieren die Ergebnisse von Operatoren
+        	\item haben \emph{data}-(Co-)Array als Member
+        	\item lokale ''Version'' geeignet für Temporaries - überladener Zuweisungsoperator
+        	\item kein Indexarray
+        	\item Reduzierungsfunktionen: \emph{sum}, \emph{mean}
+        	\item Verschiedene Datentypen:
+        	\begin{itemize}
+        		\item SU(3)-Matrix-wertig
+        		\item Reellwertig
+        		\item Boolesch
+        	\end{itemize}
+        \end{itemize}
+    \end{minipage}
+\end{frame}
+
+
+\subsection*{Operatoren}
+
+\begin{comment}
+\begin{frame}[fragile]
+    \frametitle{}
     \begin{itemize}
         \item Jo...
     \end{itemize}
+\end{frame}
+\end{comment}
+
+\begin{frame}[fragile]
+    \frametitle{Selectoperator}
+    \begin{minipage}{0.48\linewidth}
+    \begin{lstlisting}
+function select (a, b) result (tmp)
+    class(gauge_field), intent(in) :: a
+    integer, dimension(2), intent(in) :: b
+    type(gauge_field) :: tmp
+        
+    call a%copy_shift(tmp, 0, 0)
+    tmp%par = b(1)
+    tmp%dir = b(2)
+    tmp%tmp = .true.
+end function
+\end{lstlisting}
+\end{minipage}
+    \hfill
+    \begin{minipage}{0.48\linewidth}
+        \begin{itemize}
+        	\item Wählt eine Linkrichtung und Parität aus
+        	\item Akzeptiert \emph{gauge\_field} als ersten und integer array als zweiten Operanden
+        	\item Parität definiert als $p = (x+y+z+t)\ mod\ 2 \in \{0, 1\}$
+        	\item $par = -1$ bedeutet alle sites
+        	\item $dir = 0$ bedeutet alle Richtungen
+        \end{itemize}
+    \end{minipage}
+\end{frame}
+
+\begin{frame}[fragile]
+    \frametitle{Shiftoperator}
+    \begin{minipage}{0.48\linewidth}
+    \begin{lstlisting}
+function shift (a, b) result (tmp)
+    class(gauge_field), intent(in) :: a
+    integer, dimension(2), intent(in) :: b
+    type(gauge_field) :: tmp
+
+    call a%copy_shift(tmp, b(1), b(2))
+    tmp%tmp = .true.
+end function
+\end{lstlisting}
+\end{minipage}
+    \hfill
+    \begin{minipage}{0.48\linewidth}
+        \begin{itemize}
+        	\item Verschiebt das Indexarray in die angeg. Richtung um den angeg. Betrag
+        	\item Akzeptiert \emph{gauge\_field} als ersten und integer array als zweiten Operanden
+        \end{itemize}
+    \end{minipage}
+\end{frame}
+
+\begin{frame}[fragile]
+    \frametitle{Arithmetische Operatoren und Vergleichsoperatoren}
+        \begin{itemize}
+        	\item Werden zwischen \emph{gauge\_field}- und Feldvariablentypen definiert
+        	\item Rückgabewert ist stets ein lokaler Feldvariablentyp
+        	\item Viele Typen $\Rightarrow$ hohe Anzahl möglicher Operatoren
+        	\item Funktionskörper immer ähnlich:
+        	\begin{itemize}
+        		\item Iteration über alle euklidischen Indizes
+        		\item Falls $dir = 0$: Iteration über alle Richtungen
+        		\item Berechnung des $x$-Index unter Berücksicht. von Paritätsflag:
+        		\begin{lstlisting}[aboveskip=0em,abovecaptionskip=0em]
+if (step_size == 2) then
+	xa = x-abs(mod(y+z+t,2)-a%par)
+end if
+    			\end{lstlisting}
+        	\end{itemize}
+        	\item Interfaces: Skalare als Operanden und Überladung intrinsischer Funktionen (z.B. \emph{exp})
+        \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+    \frametitle{Arithmetische Operatoren: Multiply}
+    \begin{minipage}{0.48\linewidth}
+    \begin{lstlisting}
+	res%data(:,:,idx) = multSu3( &
+	data( :,:,a%indices(0,xa,y,z,t,da)) &
+	[a%indices(1,xa,y,z,t,da)], &
+	(a%dir < 0), &
+	b%data(:,:,idx), &
+	b%conj )
+	idx = idx + 1
+    \end{lstlisting}
+    \end{minipage}
+    \hfill
+    \begin{minipage}{0.48\linewidth}
+        \begin{itemize}
+        	\item Hier: Multiplikation zwischen \emph{gauge\_field} und \emph{su3\_field\_var}
+        	\item Index und Coindex werden aus Indexarray gewonnen
+        	\item \emph{multSu3} ist Wrapper um Basic Linear Algebra Subroutines (BLAS) Funktion cgemm
+        	\item Adjungierung bei neg. Wert von $dir$ (Feld) bzw. $conj$-Flag (Feldvar.)
+        \end{itemize}
+    \end{minipage}
+\end{frame}
+
+\subsection*{Update}
+
+\begin{frame}[fragile]
+    \frametitle{Eichfeld: Update}
+    \begin{minipage}{0.58\linewidth}
+    \begin{lstlisting}
+type(loc_su3_field_var), intent(inout) :: fv
+type(loc_logical_field_var), intent(in) :: lfv
+!... iterate over sites and directions
+if (lfv%data(idx)) then
+    if (fv%conj) then
+        data(:,:,a%indices(0,la,k,j,i,da)) &
+        [a%indices(1,la,k,j,i,da)] &
+        = conjg(transpose(fv%data(:,:,idx)))
+    else
+        data(:,:,a%indices(0,la,k,j,i,da)) &
+        [a%indices(1,la,k,j,i,da)] &
+        = fv%data(:,:,idx)
+    end if
+    acc = acc + 1
+end if
+idx = idx + 1
+	\end{lstlisting}
+	\end{minipage}
+    \hfill
+    \begin{minipage}{0.38\linewidth}
+        \begin{itemize}
+        	\item Iteriere über ausgewählte Links
+        	\item Führe Update durch falls \emph{lfv\%data(idx)} true ist
+        	\item Adjungiere bei entspr. Flag
+        \end{itemize}
+    \end{minipage}
+\end{frame}
+
+\section{Das Metropolismodul}
+
+
+\subsection*{Metropolis Algorithmus}
+
+\begin{frame}[fragile]
+    \frametitle{Metropolismodul: Staple-Funktion}
+    \begin{minipage}{0.63\linewidth}
+    \begin{lstlisting}
+    call staple%init_zero(s)
+    do i = 1, 4
+        if (i /= d) then
+            call staple%increment( &
+                (u.sel.[p,i]) &
+                * (u.shift.[i,1].sel.[p,d]) &
+                * (u.shift.[d,1].sel.[p,-i]) &
+                + (u.shift.[i,-1].sel.[p,-i]) &
+                * (u.shift.[i,-1].sel.[p,d]) &
+                * (u.shift.[i,-1].shift.[d,1].sel.[p,i]) &
+                )
+        end if
+    end do
+    \end{lstlisting}
+    \end{minipage}
+    \hfill
+    \begin{minipage}{0.33\linewidth}
+        \begin{itemize}
+        	\item Anwendung von Select und Shiftoperatoren
+        	\item Benutzt \emph{increment}-Funktion, die für Feldvariablen definiert ist
+        \end{itemize}
+    \end{minipage}
+\end{frame}
+
+\begin{frame}[fragile]
+    \frametitle{Metropolismodul: Metro-Routine}
+    \begin{lstlisting}
+do p = 1,2
+    do d = 1,4
+        stp = staple(u,p,d)	! calc. staple
+        stp%conj = .true.
+        call random_number(rnd1)	! generate new link
+        call random_number(rnd2)
+        if (rnd1 >= 0.5) then
+            update_tab(ceiling(rnd2*100))%conj = .true.
+        else
+            update_tab(ceiling(rnd2*100))%conj = .false.
+        end if
+        new_link = (u.sel.[p,d]) * update_tab(ceiling(rnd2*100))
+        delta_s = -beta / 3.0 * .rtrc.((new_link - (u.sel.[p,d])) * stp)
+        call rnd_field%init_rnd(s)	! accept with some prob.
+        call u%update(p, d, new_link, (rnd_field <= exp(-delta_s)), acc_count)
+        sync all
+    end do
+end do
+	\end{lstlisting}
+\end{frame}
+
+\section*{Messung}
+
+\begin{frame}
+    \frametitle{Messung der Plakettenwirkung}
+    \begin{minipage}[]{0.48\textwidth}
+        %\centering
+        \includegraphics[width=1.0\textwidth]{../plots/beta_scan_16x16.pdf}
+    \end{minipage}
+    \hfill
+    \begin{minipage}[]{0.48\textwidth}
+        \begin{itemize}
+            \item Messung der Plakettenwirkung
+            \begin{equation}
+E_P = \frac{\langle S_P \rangle} {6|\Lambda|} = \frac{1} {6|\Lambda| \cdot 3} \sum_{n \in \Lambda} \sum_{\mu < \nu} \Re\ \text{tr} [U_{\mu\nu}]
+			\end{equation}
+			\item Erzeugt auf $16^4$-Gitter
+			\item Für jeden Schritt in $\beta$ wurden 100 äquilibrierende Updates und 100 Gruppen von je zwei Updates und einer Messung durchgeführt
+			\item Laufzeit von 4.41 Stunden auf Intel i7 2600k
+			\item Gemessene Kurve entspricht dem erwarteten Bild
+        \end{itemize}
+    \end{minipage}
 \end{frame}
 
 

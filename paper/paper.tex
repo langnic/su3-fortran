@@ -24,6 +24,7 @@
 \usepackage{floatrow}
 \usepackage[margin=1.2in]{geometry}
 \usepackage{pdfpages}
+\usepackage{mathbbol}
 
 \usepackage[
     backend=biber,
@@ -147,43 +148,120 @@
 \maketitle
 
 
-\abstract{A fortran implementation of quenched QCD using coarrays is presented.}
+\abstract{A Fortran implementation of quenched QCD using coarrays is presented. The use of derived types, object oriented features of Fortran 2008 and overloaded operators is shown to provide an easy-to-use API. An application to the implementation of the Metropolis algorithm is demonstrated. A sample measurement of the plaquette action using this program agrees with measurements found in literature.}
 
 
 \section{Introduction} \label{sect:introduction}
+The evaluation of high-dimensional integrals using probabilistic methods such as Monte-Carlo integration is an essential task in lattice gauge theory. These simulations, carried out on 4-dimensional lattices, are typically computationally expensive. Parallelization and distribution of work across multiple worker nodes is therefore crucial as lattice sizes become larger. The coarray extension now included in the Fortran standard is a convenient tool to implement multi-processing capable applications with data exchange between processes. In this lab, the possibility of such an implementation for the purpose of simulating QCD has been explored. Special attention was given to the development of an easy-to-use API utilizing object-oriented features and operator syntax.
 
+Section 2 briefly discusses the theoretical background of QCD on the lattice. Section 3 introduces Fortran coarrays and describes the general design idea of the implementation. Section 4 discusses the technical details. In section 5, a sample measurement of the plaquette action is presented.
 
-\section{QCD}
+\section{Lattice QCD}
 
+This section gives a brief introduction to the path integral on the lattice, the QCD action and the Metropolis algorithm. A detailed discussion can be found in \cite{gattringer}.
 
-\subsection{The path integral quantization}
+\subsection{Path integral quantization on the lattice}
 
-\subsection{Discretization on the lattice}
+The path integral is a quantization method in quantum mechanics and quantum field theory in which the classical principal of stationary action is generalized to quantum-mechanical systems. In the case of a single particle it integrates over all possible paths of motion. In the case of quantum fields it integrates over all possible field configurations. The paths or field configurations are weighted by a phase factor that depends on the action. The path integral for a field $\Phi$ is given by
+\begin{equation}
+Z = \int \mathcal{D}\Phi e^{iS[\Phi]}
+\end{equation}
+The weight factor ensures that non-classical paths cancel in the classical limit.
+For all relevant cases the path integral cannot be computed analytically. Numerical evaluation is possible however by moving from Minkovski space to euclidean space and by discretizing space-time to obtain a finite number of degrees of freedom. On a four-dimensional lattice the path integral takes the form
+\begin{equation}
+Z = \int \mathcal{D}[\Phi] e^{-S_E[\Phi]}
+\end{equation}
+where the measure
+\begin{equation}
+\mathcal{D}[\Phi] = \prod_{n \in \Lambda} d\Phi(n)
+\end{equation}
+is a product of the integration measures of the (classical) field variables located at the lattice sites $n \in \Lambda$ and $S_E[\Phi]$ is called the euclidean action. $e^{-S_E[\Phi]}$ is called Boltzmann factor and is a measure for the probability of a given configuration. Hence the path integral is analogous to a partition function of statistical mechanics.
+
+The expectation value of an operator $O$ can be obtained from
+\begin{equation}
+\langle O \rangle = \frac 1 Z \int \mathcal{D}[\Phi] e^{-S_E[\Phi]} O[\Phi]
+\end{equation}.
+i.e. the operator becomes a functional of the field variables and its expectation value is the result of its integration over all configurations weighted by the Boltzmann factor.
+
+%% TODO: Explain discretization in more detail, e.g. fermions on lattice sites, gluons on links
+
 
 \subsection{The QCD action}
 
+This lab report discusses the implementation of the quenched approximation of quantum chromodynamics (QCD), i.e. QCD without dynamical quarks. Therefore only the gluon action will be discussed.
+The euclidean gluon action in the continuous case is given by
+\begin{equation}
+S_G[A] = \frac 1 {2g^2} \int d^4x \ \text{tr}[F_{\mu \nu}(x) F_{\mu \nu}(x)]
+\end{equation}
+where $A$ is the gauge field and $F_{\mu \nu}(x)$ is the value of the gluonic field strength tensor at $x$. By introducing link variables $U_{\mu}(n)$ (which are elements of SU(3)) on the links between the lattice sites, a discretized version of the gluon action
+\begin{equation}
+\label{eq:plaq}
+S_G[U] = \frac {\beta} 3 \sum_{n \in \Lambda} \sum_{\mu < \nu} \Re\ \text{tr} [\mathbb{1} - U_{\mu \nu}(n)]
+\end{equation}
+can be derived, where
+\begin{equation}
+\beta = \frac 6 {g^2}
+\end{equation}
+is referred to as \emph{inverse coupling} and 
+\begin{equation}
+U_{\mu \nu}(n) = U_{\mu}(n) U_{\nu}(n+\hat{\mu}) U_{\mu}(n+\hat{\nu})^{\dagger} U_{\nu}(n)^{\dagger}
+\end{equation}
+is called \emph{plaquette}. The plaquette represents the smallest non-trivial loop of link variables and its trace is a gauge invariant quantity.
 
-\section{The Metropolis algorithm}
+%% TODO: explain gauge transporter / gauge invariance
 
-In order to compute the vacuum expectation value of an operator $O$ on a lattice, the integral
+
+\subsection{Monte-Carlo integration and the Metropolis algorithm}
+
+In order to compute the vacuum expectation value of an operator $O$ of the QCD gauge field on a lattice, the integral
 \begin{equation}
 \langle O \rangle = \frac 1 Z \int \mathcal{D}[U] e^{-S_G[U]} O[U]
 \end{equation}
-has to be evaluated. 
+has to be evaluated. Since
+\begin{equation}
+\mathcal{D}[U] = \prod_{n \in \Lambda} \prod_{\mu = 1}^4 dU_{\mu}(n)
+\end{equation}
+this clearly is a computationally impossible endeavor even for moderately large lattices. The Monte-Carlo method provides a way to approximate the integral by averaging over a randomly generated sample of possible function values of the integrand. The integral then turns into a sum over the sample of generated configurations. It is favorable to generate the configurations according to the distribution given by the Boltzmann factor. The probability distribution density for the sampling becomes
+\begin{equation}
+dP(U) = \frac{e^{-S[U]}\mathcal{D}[U]}{\int \mathcal{D}[U] e^{-S[U]}}
+\end{equation}.
+The expectation value of an operator is then given by
+\begin{equation}
+\langle O \rangle = \lim_{N \rightarrow \infty} \frac{1}{N} \sum_{n = 1}^N O[U_n]
+\end{equation}
+where $N$ is the sample size. This is called importance sampling.
+Configurations distributed according to this distribution density can be generated using the Metropolis algorithm. This algorithm implements a Markov process in which configurations are updated iteratively, starting from an arbitrary initial configuration, to eventually evolve to an equilibrium distribution that follows the desired probability density. Observables should be measured only after a sufficient number of equilibrating steps has been performed. It should be noted that it is important, that the Markov process can reach every point in configuration space. The Metropolis algorithm includes the following steps:
+\begin{enumerate}
+	\item Given a field configuration, choose a site $n$ and direction $\mu$ and generate a random link update $U_{\mu}(n)' \in SU(3)$
+	\item Compute the action change $\Delta S$. Since the action has been identified with the plaquette observable (see equation \ref{eq:plaq}), $\Delta S$ will only depend on the six plaquettes that share the updated link. It is convenient to first compute the products over the other 3 gauge links that form the plaquette together with the updated link. These products are called staples and the sum over all staples is given by
+	\begin{align}
+		A = \sum_{i=1}^6 P_i = \sum_{\nu \neq \mu} \big( &U_{\nu}(n+\hat{\mu}) U_{\mu}(n+\hat{\nu})^{\dagger} U_{\nu}(n)^{\dagger}\\
+		+ &U_{\nu}(n+\hat{\mu}-\hat{\nu})^{\dagger} U_{\mu}(n-\hat{\nu})^{\dagger} U_{\nu}(n-\hat{\nu}) \big)
+	\end{align}
+	The action change becomes
+	\begin{equation}
+		\Delta S = -\frac{\beta}{N} \Re\ \text{tr} [ (U_{\mu}(n)' - U_{\mu}(n)) A]
+	\end{equation}
+	The new link $U_{\mu}(n)'$ should be close to the old link. Therefore new links are commonly generated by multiplying the old link with an update matrix $X \in SU(3)$ which is close to unity. A method to generate such update matrices is described in \cite{gattringer}.
+	\item Generate a real random number $r$ uniformly distributed between 0 and 1. Accept the link update if $r \leq \exp(-\Delta S)$. Otherwise reject it.
+	\item Repeat these steps with a new link
+\end{enumerate}
+
+
 
 % TODO: perhaps table with Fortran coarray routines?
 
 \section{Overview and general concept}
 
-This section discusses the general design ideas behind the coarray-based quenched QCD implementation presented in this report.
+After the physical background and general idea of lattice QCD has been introduced, the next sections will focus on the implementation of a QCD simulation in Fortran. Only the simpler case of static quarks (quenched approximation) has been implemented. The focus on the technical side lies on data parallelism leveraging Fortran coarrays. This section will discuss the general design ideas of the implementation.
 
 \subsection{Fortran coarrays and shortcomings}
-Coarrays provide a way to distribute data accross multiple program instances while retaining a concise syntax that abstracts the underlying inter-process or network communication. Formerly an extension of Fortran 95, coarrays are now part of the Fortran 2008 standard. Coarrays are variables with one or several \emph{codimensions} and indices referencing data stored by another program instance, called \emph{image}. \emph{Images} represent copies of the program that run asynchronously and can possess further independent local variables. The coarray entries can be accessed from every image by specifying the respective \emph{coindex} representing the image, where the data is stored. The size of the codimension is determined at runtime from the number of running images. The standard provides for additional methods that enable the user to obtain the number of images and the index of the current image and to introduce a break point to synchronize images. The coarray support in the GNU Fortran compiler is based on the \emph{OpenCoarrays} \cite{opencoarrays} library which in turn is based on the Message Passing Interface (MPI).
+Coarrays provide a way to distribute data across multiple program instances while retaining a concise syntax that abstracts the underlying inter-process or network communication. Formerly an extension of Fortran 95, coarrays are now part of the Fortran 2008 standard. Coarrays are variables with one or several \emph{codimensions} and indices referencing data stored by another program instance, called \emph{image}. \emph{Images} represent copies of the program that run asynchronously and can possess further independent local variables. The coarray entries can be accessed from every image by specifying the respective \emph{coindex} representing the image, where the data is stored. The size of the codimension is determined at runtime from the number of running images. The standard provides for additional methods that enable the user to obtain the number of images and the index of the current image and to introduce a break point to synchronize images. The coarray support in the GNU Fortran compiler is based on the \emph{OpenCoarrays} \cite{opencoarrays} library which in turn is based on the Message Passing Interface (MPI).
 
 The current implementation of coarrays in Fortran suffers from a number of shortcomings. Most notably, there is no notion of coarray pointers. This makes data encapsulation difficult. A new proposal called Coarray Fortran 2.0 \cite{coarr2.0} addresses this and other issues, but it is not clear whether and when it will become part of the Fortran standard. Therefore, work-arounds need to be found.
 
 \subsection{Design choices}
-The goal of this implementation of quenched QCD is to provide an easy-to-use API, where the actual storage and distribution of data accross images is mainly hidden from the user. Types (classes) that offer a global view on fields and field variables will be implemented, i.e. operations will be performed on the field as a whole and not individual lattice sites. To work with operators depending on nearest neighbours, shift operators will be provided. To overcome limitations associated with coarrays, such as prohibited coarray return values, local versions of certain types will be used. The gauge field itself will be implemented as a wrapper around a global data variable (with the assumption that only ever one field instance will be needed).
+The goal of this implementation of quenched QCD is to provide an easy-to-use API, where the actual storage and distribution of data across images is mainly hidden from the user. Types (classes) that offer a global view on fields and field variables will be implemented, i.e. operations will be performed on the field as a whole and not individual lattice sites. To work with operators depending on nearest neighbors, shift operators will be provided. To overcome limitations associated with coarrays, such as prohibited coarray return values, local versions of certain types will be used. The gauge field itself will be implemented as a wrapper around a global data variable (with the assumption that only ever one field instance will be needed).
 
 
 \section{Implementation}
@@ -213,11 +291,11 @@ contains
     
 end type gauge_field
 \end{lstlisting}
-Data is stored linearly. The \emph{data} variable is an allocatable coarray of type complex with three dimensions and one codimension. It's first two dimensions are those of the complex matrices, running from 1 to 3 in the case of SU(3). The third dimension is the local index. The codimension (in square brackets) represents the index of the image. These indices will be refered to as \emph{storage indices}. As field operators will often depend on link variables of the nearest neighbours, performing parallel operations requires lattice sites to be divided into sites of even or odd parity in these cases. Parity is defined by the euclidean indices as $p = (x+y+z+t)\ mod\ 2$. Thus, all sites of a given parity can be updated in parallel without affecting one another. It is then favourable from a performance perspective to align data of a given parity in memory in order to avoid cache misses. Data is therefore organized in the order $x, y, z, t, direction, parity$, i.e. link variables of a particular direction and parity that are next to each other in $x$ are stored consecutively. Euclidean indices and link direction will be referred to as \emph{field indices}. The translation between field indices and storage indices is done with the help of an index array. Its dimensions represent in this order: index/coindex, $x, y, z, t, direction$. Parity is not stored as an index since it can be calculated from the euclidean indices.
+Data is stored linearly. The \emph{data} variable is an allocatable coarray of type complex with three dimensions and one codimension. It's first two dimensions are those of the complex matrices, running from 1 to 3 in the case of SU(3). The third dimension is the local index. The codimension (in square brackets) represents the index of the image. These indices will be refered to as \emph{storage indices}. As field operators will often depend on link variables of the nearest neighbours, performing parallel operations requires lattice sites to be divided into sites of even or odd parity. Parity is defined by the euclidean indices as $p = (x+y+z+t)\ mod\ 2$. Thus, all sites of a given parity can be updated in parallel without affecting one another. It is then favourable from a performance perspective to align data of a given parity in memory in order to avoid cache misses. Data is therefore organized in the order $x, y, z, t, direction, parity$, i.e. link variables of a particular direction and parity that are next to each other in $x$ are stored consecutively. Euclidean indices and link direction will be referred to as \emph{field indices}. The translation between field indices and storage indices is done with the help of an index array. Its dimensions represent in this order: index/coindex, $x, y, z, t, direction$. Parity is not stored as an index since it can be calculated from the euclidean indices.
 The \emph{gauge\_field} type possesses two integer members \emph{dir} and \emph{par} which serve as flags on temporaries used in arithmetic operations. This is further explained when discussing operators. The integers $x_{\text{low}}$, $x_{\text{up}}$ etc. define the boundaries of the current image, $n_x$, ..., $n_t$ the lengths of the respective dimensions.
 The \emph{initialize} method allocates the data array and initializes the matrices either to the unit matrix or random unitary $3\times3$ matrices. It also fills the index array and distributes the data to the available
 images. The latter is performed in the $t$ and $z$ dimensions.
-The \emph{update} method updates all link variables of parity $pin$ and direction $din$ with values stored in the \emph{su3\_field\_var} variable supplied as the third argument, if the corresponding link stored in the fourth argument of type \emph{logical\_field\_var} is set to \lstinline{.true.}{}.
+The \emph{update} method updates all link variables of parity $pin$ and direction $din$ with values stored in the \emph{su3\_field\_var} variable supplied as the third argument, if the corresponding link value stored in the fourth argument of type \emph{logical\_field\_var} is set to \lstinline{.true.}{}.
 
 \begin{lstlisting}[caption={Update subroutine of the \emph{gauge\_field} type. The subroutine \emph{comp\_dimensions} computes \emph{d\_low}, \emph{d\_up} and \emph{step\_size} from the values of the direction and parity flags}]
 subroutine update(a, pin, din, fv, lfv, acc)
@@ -307,12 +385,12 @@ contains
     generic :: operator (.rtrc.) => real_trace
 end type su3_field_var
 \end{lstlisting}
-Additionally, each field variable type comes in a local version, meaning that the data member is an arrray instead of a coarray. This is necessary since derived types containing coarrays cannot be function return values. An overloaded assignment operator on the (global) field variable types allows the assignment of local field variables to (global) field variables, i.e. the array is copied into the local part of the coarray on every image. Reductions are only possible on (global) field variables for obvious reasons. Increment and initialization routines are defined for the \emph{su3\_field\_var} and \emph{real\_field\_var} types. The \lstinline{.rtrc.}{} operator calculates the real part of the trace on an \emph{su3\_field\_var} and returns a \emph{real\_field\_var}.
+Additionally, each field variable type comes in a local version, meaning that the data member is an array instead of a coarray. This is necessary since derived types containing coarrays cannot be function return values. An overloaded assignment operator on the (global) field variable types allows the assignment of local field variables to (global) field variables, i.e. the array is copied into the local part of the coarray on every image. Reductions are only possible on (global) field variables for obvious reasons. Increment and initialization routines are defined for the \emph{su3\_field\_var} and \emph{real\_field\_var} types. The \lstinline{.rtrc.}{} operator calculates the real part of the trace on an \emph{su3\_field\_var} and returns a \emph{real\_field\_var}.
 
 
 \subsection{Operators}
 
-For convenient use of the \emph{gauge\_field} type and the field variable types in arithmetic and logical operations various operators are overloaded. On \emph{gauge\_field}s additionally select and shift operators are defined to specify which links should be used in subsequent operations.
+For convenient use of the \emph{gauge\_field} type and the field variable types in arithmetic operations and comparisons, various operators are overloaded. On \emph{gauge\_field}s additional select and shift operators are defined to specify which links should be used in subsequent operations.
 
 \subsubsection*{Select and shift}
 
@@ -330,7 +408,7 @@ function select (a, b) result (tmp)
 end function
 \end{lstlisting}
 
-The shift operator is used to select neighbouring sites (as needed by gauge invariant operators such as the plaquette). It is a binary operator whose operands are a \emph{gauge\_field} and an integer array with two entries. The first entry represents the shift direction, the second entry the shift distance. The shift operator returns a temporary copy of the current \emph{gauge\_field} where the index array has been shifted in the specified direction and by the specified distance.
+The shift operator is used to select neighboring sites (as needed by gauge invariant observables such as the plaquette). It is a binary operator whose operands are a \emph{gauge\_field} and an integer array with two entries. The first entry represents the shift direction, the second entry the shift distance. The shift operator returns a temporary copy of the current \emph{gauge\_field} where the index array has been shifted in the specified direction and by the specified distance.
 \begin{lstlisting}[caption={Shift operator of the \emph{gauge\_field} type}]
 function shift (a, b) result (tmp)
     class(gauge_field), intent(in) :: a
@@ -342,13 +420,20 @@ function shift (a, b) result (tmp)
 end function
 \end{lstlisting}
 
-\subsubsection*{Arithmetic and logical operators}
+\subsubsection*{Arithmetic and comparison operators}
 
-Arithmetic and logical operators can be defined between two \emph{gauge\_field}s, between a \emph{gauge\_field} and an \emph{su3\_field\_var} or between field variables. The abundance of types and possible combinations requires a large number of operator implementations, many of which only differ in the declaration part of the function. Since Fortran does not provide templates code duplication is unavoidable. Currently only the operators needed for the plaquette/staple are implemented. Since it is always possible to convert between local and global field variables, most of them are only available for the local versions of the field variables.
+Arithmetic and comparison operators can be defined between two \emph{gauge\_field}s, between a \emph{gauge\_field} and an \emph{su3\_field\_var} or between field variables. The abundance of types and possible combinations requires a large number of operator implementations, many of which only differ in the declaration section of the function. Since Fortran does not provide templates, code duplication is unavoidable. The function body mostly contains a nested do-loop running over all euclidean dimensions $x,y,z,t$ and all directions, if the direction flag is set to 0. Otherwise, only the selected direction is considered. If the parity flag is set to either 0 or 1, the variable \emph{step\_size} is set to 2 such that every other lattice site is skipped. The $x$-index $l$ gets redefined as \lstinline{la = l-abs(mod(i+j+k,2)-a%par)}{} according to the selected parity, where $a$ is the \emph{gauge\_field} and $k,j,i$ index the $y$-, $z$- and $t$-dimensions. Currently only those operators needed for the plaquette/staple are implemented. Since it is always possible to convert between local and global field variables, most of them are only available for the local versions of the field variables.
 \begin{lstlisting}[caption={Multiplication operator between a \emph{gauge\_field} and an \emph{su3\_field\_var}. The function multSu3 is a wrapper around the Basic Linear Algebra Subroutines (BLAS) function cgemm. The second and fourth argument indicate whether the matrix should be conjugated.}]
 function multiply_fv(a, b) result (res)
     
-    ! ...
+    class(gauge_field), intent(in) :: a
+    type(su3_field_var), intent(in) :: b
+    type(loc_su3_field_var) :: res
+    integer :: i,j,k,l,d, idx
+    integer :: d_low, d_up, da, la, step_size
+
+    call comp_dimensions(a, res, d_low, d_up, step_size)
+    call check_dim_fv(a, size(b%data)/9)
 
     idx = 1
     do d = d_low, d_up
@@ -383,9 +468,9 @@ function multiply_fv(a, b) result (res)
 
 end function
 \end{lstlisting}
-It is necessary that operands have the same field dimensions, i.e. if odd parity has been selected on one of the operands then parity (but not necessarily the same) needs to be set on the other. All operators act on all selected links simultaneously, iterating over them in the order they are stored in memory. Which operators are currently implemented for which types can be seen in table \ref{tab:ops}.
+It is necessary that operands have the same field dimensions, i.e. if odd parity has been selected on one of the operands then parity (but not necessarily the same) needs to be set on the other. In the simpler case of operators between two field variables, a single do-loop iterates over the data array. For addition/subtraction and comparison operators, the intrinsic operators on arrays are used. Which operators are currently implemented for which types can be seen in table \ref{tab:ops}.
 \begin{table}
-\caption{Arithmetic and logical operators and possible operands}
+\caption{Arithmetic and comparison operators and possible operands}
 \label{tab:ops}
 \begin{tabular}{l|l}
 Operator & Types \\
@@ -400,7 +485,7 @@ greater than or equal ($>=$) & \emph{real\_field\_var} \\
 greater than ($>$) & \emph{real\_field\_var} \\
 \end{tabular}
 \end{table}
-Logical operators produce \emph{logical\_field\_var}s as their results. To facilitate operations including intrinsic types like scalars and to overload intrinsic functions like $exp$ for field variables, an interface module is provided.
+Comparison operators produce \emph{logical\_field\_var}s as their results. To facilitate operations including intrinsic types like scalars and to overload intrinsic functions like $exp$ for field variables, an interface module is provided.
 
 \subsection{The metropolis module}
 
@@ -488,16 +573,25 @@ end subroutine metro
 
 \section{Sample measurement}
 
+This last section briefly presents a sample measurement of the plaquette expectation value as a proof of concept. Fig. \ref{fig:plot} shows the normalized plaquette action
+\begin{equation}
+E_P = \frac{\langle S_P \rangle} {6|\Lambda|} = \frac{1} {6|\Lambda| \cdot 3} \sum_{n \in \Lambda} \sum_{\mu < \nu} \Re\ \text{tr} [U_{\mu\nu}]
+\end{equation}
+plotted against $\beta$. The plot has been generated on a $16^4$ lattice, starting from a configuration of unit matrices, increasing $\beta$ in steps of 0.2 and using 100 equilibrating updates after every change, followed by 100 groups of two updates and one measurement. This amounts to a total of 12000 updates and 4000 measurements. The simulation ran on 4 cores of an Intel i7 2600k and took 4.41 hours to complete. The plot agrees with other measurements found in literature (e.g. in \cite{gattringer}).
+
 \begin{figure}
 \centering
 \includegraphics[width=0.8\textwidth]{../plots/beta_scan_16x16.pdf}
-\caption{$\beta$-Scan for a $16^4$ lattice}
-	\label{img:beta}
+\caption{The plaquette action $E_P$ plotted against $\beta$ on a $16^4$ lattice. The data points represent the mean value and the error bars the standard deviation obtained from 100 measurements per value of $\beta$.}
+	\label{fig:plot}
 \end{figure}
 
+\section{Summary}
+
+In this lab, an implementation of the quenched approximation of QCD on the lattice using Fortran coarrays has been developed. The implemented API makes use of Fortran's object oriented features and overloaded operators and provides the user with easy-to-use types representing fields and field variables. Using these types an implementation of the Metropolis algorithm has been shown. A sample measurement of the plaquette action on a $16^4$ lattice terminated after 4.41 hours on an Intel i7 2600k using 4 cores performing 12000 update sweeps and 4000 measurements. The resulting plot showing a $\beta$-scan of the plaquette action agrees with measurements found in literature.
 
 \pagebreak
-%\printbibliography
+\printbibliography
 
 
 \end{document}

@@ -16,6 +16,8 @@ program main
     integer :: i, st = 0, n_measure, n_thermal
     real :: scnrm2
     logical :: output
+    real, dimension(2) :: tarray
+    real :: result
 
 
     call random_seed()
@@ -23,17 +25,23 @@ program main
 
 
     ! file output
-    open(20, file='plaquette.txt', iostat=st)
+    open(20, file='plaquette_test.txt', iostat=st)
     if (st /= 0) error stop 'Failed to open file'
 
     ! initial value for beta and epsilon
     beta = 0.2
-    beta_stop = 8.0
+    beta_stop = 0.6
     beta_step = 0.2
     eps = 0.3
     n_measure = 100
     n_thermal = 100
     output = .true.
+
+    ! execution time
+    call ETIME(tarray, result)
+    print *, 'Elapsed time: ', result
+    print *, 'User time: ', tarray(1)
+    print *, 'System time: ', tarray(2)
 
     allocate(sp(n_measure))
     print *, 'Start run'
@@ -86,6 +94,12 @@ program main
         ! break loop when beta_stop is reached
         if (beta > beta_stop) exit
     end do
+
+    ! execution time
+    call ETIME(tarray, result)
+    print *, 'Elapsed time: ', result
+    print *, 'User time: ', tarray(1)
+    print *, 'System time: ', tarray(2)
 
     print *, 'Done'
 
