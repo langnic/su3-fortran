@@ -2,7 +2,7 @@
 
 ### What is this repository for? ###
 
-* quenched QCD implementation using Fortran Co-Arrays
+* SU3 gluodynamics implementation using Fortran Co-Arrays
 * Version 0.0.1
 
 ### How do I get set up? ###
