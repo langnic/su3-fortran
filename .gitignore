@@ -1,0 +1,27 @@
+.DS_Store
+
+# build output
+build/
+*.o
+*.mod
+
+# LaTeX artifacts
+*.aux
+*.log
+*.nav
+*.out
+*.snm
+*.toc
+*.bbl
+*.bcf
+*.blg
+*.run.xml
+*.synctex.gz
+*~
+presentation/output/
+
+# local reference material (copyrighted PDFs)
+Material/
+
+# run output
+plaquette_test.txt
