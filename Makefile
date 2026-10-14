@@ -4,6 +4,7 @@ FC := caf
 endif
 FFLAGS  ?= -O2 -fcheck=bounds
 NP      ?= 4
+NPMAX   ?= 10       # for test-np
 CONFIG  ?= config/default.toml
 
 # BLAS (cgemm, cdotc, scnrm2): Accelerate on macOS, -lblas elsewhere
@@ -23,7 +24,7 @@ LIB_OBJ := $(addprefix $(BUILD)/,$(addsuffix .o,$(LIB_SRC)))
 
 # tests: one program per file in tests/ (the lattice is a global singleton,
 # so each test needs its own process)
-TESTS    := test_toml test_cold_start test_hot_start test_metropolis
+TESTS    := test_toml test_decomposition test_cold_start test_hot_start test_metropolis test_distribution
 TEST_BIN := $(addprefix $(BUILD)/,$(TESTS))
 
 all: $(BIN)
@@ -53,7 +54,18 @@ test: $(TEST_BIN)
 	done
 	@echo "All tests passed"
 
+# run the distribution tests for every image count 1..NPMAX
+test-np: $(BUILD)/test_distribution $(BUILD)/test_metropolis
+	@for n in $$(seq 1 $(NPMAX)); do \
+	    for t in test_distribution test_metropolis; do \
+	        echo "== $$t, $$n image(s)"; \
+	        cafrun -np $$n ./$(BUILD)/$$t > $(BUILD)/test-np.log 2>&1 || { cat $(BUILD)/test-np.log; exit 1; }; \
+	        grep -E "FAIL|ok" $(BUILD)/test-np.log | grep -c ok | sed 's/^/   checks ok: /'; \
+	    done; \
+	done
+	@echo "All image counts passed"
+
 clean:
 	rm -rf $(BUILD)
 
-.PHONY: all run test clean
+.PHONY: all run test test-np clean

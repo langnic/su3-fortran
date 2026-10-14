@@ -763,15 +763,53 @@ contains
     end subroutine
 
 
+    !! split the z-t plane into nz_patches x nt_patches patches, one per image.
+    !! Any factorization n_images = nz_patches * nt_patches with nz_patches | nz and
+    !! nt_patches | nt is allowed; the one with the shortest patch boundary
+    !! (smallest nz/nz_patches + nt/nt_patches) is chosen to minimize communication.
+    subroutine decompose(nz, nt, n_images, nz_patches, nt_patches, found)
+        integer, intent(in) :: nz, nt, n_images
+        integer, intent(out) :: nz_patches, nt_patches
+        logical, intent(out) :: found
+        integer :: d, best_cost
+
+        found = .false.
+        nz_patches = 0
+        nt_patches = 0
+        best_cost = huge(best_cost)
+        do d = 1, n_images
+            if (mod(n_images, d) /= 0) cycle
+            if (mod(nz, d) /= 0 .or. mod(nt, n_images/d) /= 0) cycle
+            if (nz/d + nt/(n_images/d) < best_cost) then
+                best_cost = nz/d + nt/(n_images/d)
+                nz_patches = d
+                nt_patches = n_images/d
+                found = .true.
+            end if
+        end do
+    end subroutine decompose
+
+
+    !! position (0-based) of the patch owned by an image in the nz_patches x nt_patches grid
+    !! images are numbered with the z patch running fastest
+    pure subroutine patch_position(image, nz_patches, zi, ti)
+        integer, intent(in) :: image, nz_patches
+        integer, intent(out) :: zi, ti
+        zi = mod(image - 1, nz_patches)
+        ti = (image - 1) / nz_patches
+    end subroutine patch_position
+
+
     !! initialize the gauge field - set dimensions
-    !! nz*nt has to be a multiple of the number of nodes
+    !! the number of images has to factor into patches along z and t (see decompose)
     !! random indicates hot or cold start
     subroutine initialize(self, nx, ny, nz, nt, random)
         class(gauge_field), intent(inout) :: self
         integer, intent(in) :: nx, ny, nz, nt
         logical, intent(in) :: random
         integer :: alloc, i, j, k, l, lp, m, p, idx, co_idx
-        integer :: nz_patches, nt_patches, nzp, ntp
+        integer :: nz_patches, nt_patches, nzp, ntp, zi, ti
+        logical :: found
 
         ! enforce even lattice dimensions
         if ( mod(nx, 2) /= 0 .or. mod(ny, 2) /= 0 .or. mod(nz, 2) /= 0 .or. mod(nt, 2) /= 0) then
@@ -779,20 +817,15 @@ contains
         end if
 
         ! for simplicity we only divide along z and t
-        ! nz * nt has to be a multiple of the number of nodes
-        allocate(self%indices(0:1, nx, ny, nz, nt, 4))
-        if ( mod(real(nz), sqrt(real(num_images()))) == 0.0 .and. mod(real(nt), sqrt(real(num_images()))) == 0.0) then
-            nz_patches = sqrt(real(num_images()))
-            nt_patches = sqrt(real(num_images()))
-        else if (mod(nz, num_images()) == 0) then
-            nz_patches = num_images()
-            nt_patches = 1
-        else if (mod(nt, num_images()) == 0) then
-            nt_patches = num_images()
-            nz_patches = 1
-        else
-            error stop "Number of lattice sites Nz*Nt has to be a multiple of the number of nodes"
+        call decompose(nz, nt, num_images(), nz_patches, nt_patches, found)
+        if (.not. found) then
+            if (this_image() == 1) then
+                write (*,*) 'Cannot distribute a lattice with nz =', nz, ', nt =', nt, ' over', num_images(), ' images:'
+                write (*,*) 'the image count must factor into nz_patches * nt_patches with nz_patches | nz and nt_patches | nt'
+            end if
+            error stop "Lattice cannot be distributed over this number of images"
         end if
+        allocate(self%indices(0:1, nx, ny, nz, nt, 4))
 
         ! allocate data co-array
         nzp = nz / nz_patches   ! nz per patch
@@ -811,10 +844,11 @@ contains
         self%x_up = nx
         self%y_low = 1
         self%y_up = ny
-        self%z_low = mod(this_image()-1, nt_patches)*nzp+1
-        self%z_up = mod(this_image()-1, nt_patches)*nzp+nzp
-        self%t_low = int((this_image()-1)/nz_patches)*ntp+1
-        self%t_up = int((this_image()-1)/nz_patches)*ntp+ntp
+        call patch_position(this_image(), nz_patches, zi, ti)
+        self%z_low = zi*nzp+1
+        self%z_up = zi*nzp+nzp
+        self%t_low = ti*ntp+1
+        self%t_up = ti*ntp+ntp
 
         ! (local) dimensions - for convenience
         self%nx = self%x_up - self%x_low + 1
@@ -836,11 +870,12 @@ contains
 
         ! fill index array and initialize matrices
         do co_idx = 1, num_images()     ! patches
+            call patch_position(co_idx, nz_patches, zi, ti)
             idx = 0
             do m = 1, 4                 ! link direction
                 do p = 0, 1             ! parity
-                    do i = int((co_idx-1)/nz_patches)*ntp+1, int((co_idx-1)/nz_patches)*ntp+ntp      ! t
-                        do j = mod(co_idx-1, nt_patches)*nzp+1, mod(co_idx-1, nt_patches)*nzp+nzp    ! z
+                    do i = ti*ntp+1, ti*ntp+ntp          ! t
+                        do j = zi*nzp+1, zi*nzp+nzp          ! z
                             do k = 1, ny                                                             ! y
                                 do l = 2-abs(mod(i+j+k, 2)-p), nx-abs(mod(i+j+k, 2)-p), 2            ! x
                                     idx = idx + 1

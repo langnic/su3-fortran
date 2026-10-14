@@ -1,4 +1,4 @@
-!! Metropolis on a 4^4 lattice, started cold:
+!! Metropolis on a 4^4 lattice (larger if 4^4 cannot be split over the images), started cold:
 !! links stay SU(3), plaquette follows the known strong/weak coupling behaviour
 program test_metropolis
     use mod_testing
@@ -9,11 +9,16 @@ program test_metropolis
     implicit none
 
     type(gauge_field) :: u
+    integer :: n, nzp, ntp
+    logical :: found
     real :: acc, p_strong, p_weak
     real, parameter :: beta_strong = 0.6, beta_weak = 6.0
 
     call seed_rng(2024, this_image())
-    call u%initialize(4, 4, 4, 4, .false.)
+    n = 4
+    call decompose(n, n, num_images(), nzp, ntp, found)
+    if (.not. found) n = 2 * num_images()
+    call u%initialize(4, 4, n, n, .false.)
 
     ! strong coupling: <P> = beta/18 + O(beta^3)
     call run_beta(beta_strong, p_strong)
