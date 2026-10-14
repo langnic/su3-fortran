@@ -3,6 +3,30 @@ module mod_utils
 
     contains
 
+        !! seed the random number generator reproducibly
+        !! every image gets its own stream, derived from the common seed and its image index
+        subroutine seed_rng(seed, image)
+            integer, intent(in) :: seed, image
+            integer, allocatable :: state(:)
+            integer(kind=8) :: x
+            integer :: n, i
+
+            call random_seed(size=n)
+            allocate(state(n))
+
+            ! fill the state with a 31-bit LCG (int64 arithmetic: no overflow)
+            x = mod(int(seed, 8) * 7919_8 + int(image, 8) * 104729_8 + 12345_8, 2147483648_8)
+            do i = 1, 20    ! warm up, so that small seeds do not give correlated streams
+                x = mod(x * 1103515245_8 + 12345_8, 2147483648_8)
+            end do
+            do i = 1, n
+                x = mod(x * 1103515245_8 + 12345_8, 2147483648_8)
+                state(i) = int(x)
+            end do
+
+            call random_seed(put=state)
+        end subroutine seed_rng
+
         !! generate random su(2) matrix close to unity
         function get_small_su2(eps)
             complex, dimension(2,2) :: get_small_su2

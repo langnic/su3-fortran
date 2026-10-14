@@ -1,0 +1,31 @@
+# su3-fortran run configuration. Run with:  make run            (uses this file)
+#                                           make run CONFIG=config/small.toml
+# All keys are optional except scan.beta_min; defaults are the values shown here.
+
+[lattice]
+nx = 16
+ny = 16
+nz = 16
+nt = 16                 # all dimensions must be even; nz*nt must suit the number of images
+start = "cold"          # "cold" (all links = 1) or "hot" (random links)
+
+[algorithm]
+epsilon = 0.3           # Metropolis step size: spread of the proposed link change
+reunitarize_interval = 10   # project links back to SU(3) every n sweeps (0 = never)
+
+[scan]                  # beta = 6/g^2; scans beta_min, beta_min + step, ... <= beta_max
+beta_min = 0.2
+beta_max = 0.6
+beta_step = 0.2
+
+[sampling]
+thermalization_sweeps = 100     # discarded sweeps at each beta
+measurements = 100              # stored measurements at each beta
+sweeps_per_measurement = 2      # Metropolis sweeps between two measurements
+
+[random]
+seed = 0                # 0: choose from the clock (the seed used is written to the output header)
+
+[output]
+dir = "output"
+name = "plaquette_scan"         # raw data goes to <dir>/<name>.csv

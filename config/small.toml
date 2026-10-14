@@ -1,0 +1,22 @@
+# Quick 4^4 run for checking that everything works (a few seconds)
+
+[lattice]
+nx = 4
+ny = 4
+nz = 4
+nt = 4
+
+[scan]
+beta_min = 0.5
+beta_max = 6.0
+beta_step = 0.5
+
+[sampling]
+thermalization_sweeps = 50
+measurements = 50
+
+[random]
+seed = 42
+
+[output]
+name = "small_scan"

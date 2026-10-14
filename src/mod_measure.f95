@@ -30,6 +30,26 @@ module mod_measure
 
     end function
 
+    !! largest deviation of any link from SU(3), over all images:
+    !! max over links of |U U^dagger - 1| (elementwise) and |det U - 1|
+    function max_unitarity_violation()
+        real :: max_unitarity_violation
+        complex :: m(3,3), prod(3,3), det
+        integer :: i
+
+        max_unitarity_violation = 0
+        do i = 1, size(data, 3)
+            m = data(:,:,i)
+            prod = multSu3(m, .false., m, .true.)
+            det = m(1,1) * (m(2,2)*m(3,3) - m(2,3)*m(3,2)) &
+                - m(1,2) * (m(2,1)*m(3,3) - m(2,3)*m(3,1)) &
+                + m(1,3) * (m(2,1)*m(3,2) - m(2,2)*m(3,1))
+            max_unitarity_violation = max(max_unitarity_violation, &
+                maxval(abs(prod - id_su3())), abs(det - 1))
+        end do
+        call co_max(max_unitarity_violation)
+    end function
+
     !! calculates the wilson action
     function s_wilson(u, beta)
         type(gauge_field), intent(in) :: u
