@@ -14,7 +14,6 @@ program main
     real :: beta, beta_stop, beta_step, eps, mean, sigma
     real, allocatable :: sp(:)
     integer :: i, st = 0, n_measure, n_thermal
-    real :: scnrm2
     logical :: output
     real, dimension(2) :: tarray
     real :: result
@@ -80,8 +79,8 @@ program main
                 print *, 'Orthogonal: ', dot_product(data(1,:,1), data(2,:,1)), &
                     dot_product(data(1,:,1), data(3,:,1)), &
                     dot_product(data(2,:,1), data(3,:,1))
-                print *, 'Normal: ', scnrm2(3,data(1,:,1),1), scnrm2(3,data(2,:,1),1), &
-                    scnrm2(3,data(3,:,1),1)
+                print *, 'Normal: ', norm2(abs(data(1,:,1))), norm2(abs(data(2,:,1))), &
+                    norm2(abs(data(3,:,1)))
             end if
 
         end if

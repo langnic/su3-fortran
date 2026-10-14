@@ -82,17 +82,15 @@ module mod_utils
 
         !! project complex square matrix to unitarity
         subroutine unitarize(m)
-            real :: scnrm2
             complex, dimension(3,3), intent(inout) :: m
             complex, dimension(3) :: v
-            complex :: cdotc
 
             ! normalize first row
-            m(1,1:3) = m(1,1:3) / scnrm2(3,m(1,1:3),1)
+            m(1,1:3) = m(1,1:3) / sqrt(real(dot_product(m(1,1:3), m(1,1:3))))
 
             ! normalize / orthogonalize second row
-            v = m(2,1:3) - m(1,1:3) * conjg(cdotc(3, m(2,1:3), 1, m(1,1:3), 1)) ! attention: cdotc conj. the FIRST vect.
-            m(2,1:3) = v / scnrm2(3,v,1)
+            v = m(2,1:3) - m(1,1:3) * conjg(dot_product(m(2,1:3), m(1,1:3))) ! dot_product conj. the FIRST vect.
+            m(2,1:3) = v / sqrt(real(dot_product(v, v)))
 
             ! construct third row from first two
             m(3,1:3) = cross(conjg(m(1,1:3)), conjg(m(2,1:3)))
@@ -102,9 +100,6 @@ module mod_utils
             !write(*,*) 'check dot prod. 1st * 3rd: ', cdotc(3, m(3,1:3), 1, m(1,1:3), 1)
             !write(*,*) 'check dot prod. 2nd * 3rd: ', cdotc(3, m(3,1:3), 1, m(2,1:3), 1)
             ! check norm
-            !write(*,*) 'check nrm 1st row: ', scnrm2(3,m(1,1:3),1)
-            !write(*,*) 'check nrm 2nd row: ', scnrm2(3,m(2,1:3),1)
-            !write(*,*) 'check nrm 3rd row: ', scnrm2(3,m(3,1:3),1)
             ! final matrix
             !write(*,*) ' ', m(1,:)
             !write(*,*) ' ', m(2,:)

@@ -63,7 +63,7 @@ module mod_metropolis
             call init_update_tab(100, s, eps)
 
             ! iterate over both parities and all directions
-            do p = 1,2
+            do p = 0,1
                 do d = 1,4
 
                 ! TODO: multi-hit
