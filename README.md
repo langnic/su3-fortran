@@ -31,7 +31,7 @@ The included python module reads the CSV output and produces averages with their
 
 ![Plaquette vs beta](example_output/production_analysis/plaquette_vs_beta.png)
 
-Average plaquette vs. beta from `config/production.toml` (500 measurements per beta, gamma-method errors; full output in `example_output/`). At small beta the data follow the strong-coupling expansion <P> = beta/18, and around beta ~ 5.5 the crossover to weak coupling sets in. At beta = 6 we find <P> = 0.593(1), close to the literature value of about 0.594, and the shape of the curve matches Fig. 4.2 of Gattringer & Lang. Autocorrelation times are largest in the crossover region (beta ~ 5.5), where the errors are least reliable. See [`report.pdf`](report.pdf) for details.
+Average plaquette vs. beta from `config/production.toml` (500 measurements per beta, gamma-method errors; full output in `example_output/`). At small beta the data follow the strong-coupling expansion $\langle P \rangle  = \beta/18$, and around $\beta \sim 5.5$ the crossover to weak coupling sets in. The shape of the curve matches Fig. 4.2 of Gattringer & Lang. Autocorrelation times are largest in the crossover region (beta ~ 5.5), where the errors are least reliable. See [`report.pdf`](report.pdf) for details.
 
 ## Build
 
@@ -93,7 +93,7 @@ The output CSVs contain `#`-prefixed header lines (`# key = value`: seed, images
 
 ## Tests
 
-`make test` runs the Fortran tests, `make test-np` repeats the distribution and Metropolis tests for 1..10 images. Checked: cold start (plaquette = 1, action = 0), hot start, links stay in SU(3), the strong-coupling limit <P> ~ beta/18, a plausible plaquette at beta = 6, correct lattice decomposition and a plaquette independent of the number of images, the TOML reader and per-image reproducible seeding. The analysis has its own pytest suite (`make analysis-test`).
+`make test` runs the Fortran tests, `make test-np` repeats the distribution and Metropolis tests for 1..10 images. Checked: cold start (plaquette = 1, action = 0), hot start, links stay in SU(3), the strong-coupling limit $\langle P \rangle \sim \beta / 18$, correct lattice decomposition and a plaquette independent of the number of images, the TOML reader and per-image reproducible seeding. The analysis has its own pytest suite (`make analysis-test`).
 
 ## Design notes and limitations
 
