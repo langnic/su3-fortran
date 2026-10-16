@@ -1,5 +1,6 @@
 # su3-fortran
 
+[![CI](https://github.com/langnic/su3-fortran/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/langnic/su3-fortran/actions/workflows/ci.yml)
 
 `su3-fortran` is a simple Yang-Mills simulation code performing a beta-scan of the plaquette observable, implemented in modern Fortran with Coarrays for process-level concurrency.
 It is a slightly cleaned-up project from my physics master's at the University of Wuppertal. I decided to make it available to anyone curious about lattice field theory
@@ -110,7 +111,7 @@ Users of this codebase are encouraged to improve these things.
 
 ## References
 
-- [`report.pdf`](report.pdf): lab report (sources in `report/`)
+- [`report.pdf`](report.pdf): lab report
 - C. Gattringer, C. B. Lang, *Quantum Chromodynamics on the Lattice*, Springer (2010)
 - U. Wolff, *Monte Carlo errors with less errors*, Comput. Phys. Commun. 156 (2004) 143
 - F. Joswig et al., *pyerrors: a python framework for error analysis of Monte Carlo data*, Comput. Phys. Commun. 288 (2023) 108750
