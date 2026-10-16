@@ -1,0 +1,34 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  fortran:
+    runs-on: ubuntu-latest
+    env:
+      # the runner has few cores: allow more images than cores
+      OMPI_MCA_rmaps_base_oversubscribe: "1"
+      OMPI_MCA_btl_vader_single_copy_mechanism: none
+      # one-sided MPI (used by coarrays) fails with the default osc component in CI containers
+      OMPI_MCA_osc: pt2pt
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install compiler, OpenCoarrays, BLAS
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gfortran libblas-dev libopenmpi-dev openmpi-bin \
+            libcoarrays-openmpi-dev
+      - name: Build
+        run: make
+      - name: Test
+        run: make test NP=4
+
+  analysis:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - name: Test
+        run: make analysis-test
