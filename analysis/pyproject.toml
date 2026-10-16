@@ -1,0 +1,17 @@
+[project]
+name = "su3-analysis"
+version = "0.1.0"
+description = "Error analysis (gamma method, pyerrors) for su3-fortran plaquette measurements"
+requires-python = ">=3.10"
+dependencies = [
+    "pyerrors>=2.11",
+    "numpy",
+    "matplotlib",
+]
+
+[dependency-groups]
+dev = ["pytest"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]

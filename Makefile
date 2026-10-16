@@ -65,7 +65,21 @@ test-np: $(BUILD)/test_distribution $(BUILD)/test_metropolis
 	done
 	@echo "All image counts passed"
 
+# --- analysis (python, pyerrors; environment in analysis/.venv, managed by uv)
+CSV ?= output/plaquette_scan.csv
+ANALYSIS_ARGS ?=
+
+analysis-setup:
+	cd analysis && uv sync
+
+analysis-test: analysis-setup
+	cd analysis && .venv/bin/python -m pytest -q
+
+# make analyze CSV=output/plaquette_scan.csv ANALYSIS_ARGS="--history --autocorr 6.0"
+analyze: analysis-setup
+	cd analysis && .venv/bin/python analyze.py ../$(CSV) $(ANALYSIS_ARGS)
+
 clean:
 	rm -rf $(BUILD)
 
-.PHONY: all run test test-np clean
+.PHONY: all run test test-np analysis-setup analysis-test analyze clean

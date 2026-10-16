@@ -28,3 +28,11 @@ plaquette_test.txt
 
 # run output
 output/
+
+# analysis environment and caches
+analysis/.venv/
+__pycache__/
+.pytest_cache/
+.legacy/
+report/
+presentation/

@@ -1,0 +1,32 @@
+# su3-fortran run configuration. Run with:  make run            (uses this file)
+#                                           make run CONFIG=config/small.toml
+# All keys are optional except scan.beta_min
+# Production run on slightly smaller lattice, suitable for larger number of measurements
+
+[lattice]
+nx = 8
+ny = 8
+nz = 8
+nt = 8                 # all dimensions must be even; nz*nt must suit the number of images
+start = "cold"          # "cold" (all links = 1) or "hot" (random links)
+
+[algorithm]
+epsilon = 0.3           # Metropolis step size: spread of the proposed link change
+reunitarize_interval = 10   # project links back to SU(3) every n sweeps (0 = never)
+
+[scan]                  # beta = 6/g^2; scans beta_min, beta_min + step, ... <= beta_max
+beta_min = 0.2
+beta_max = 8.0
+beta_step = 0.2
+
+[sampling]
+thermalization_sweeps = 200     # discarded sweeps at each beta
+measurements = 500              # stored measurements at each beta
+sweeps_per_measurement = 2      # Metropolis sweeps between two measurements
+
+[random]
+seed = 0                # 0: choose from the clock (the seed used is written to the output header)
+
+[output]
+dir = "output"
+name = "production"         # raw data goes to <dir>/<name>.csv

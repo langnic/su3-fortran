@@ -28,4 +28,4 @@ seed = 0                # 0: choose from the clock (the seed used is written to 
 
 [output]
 dir = "output"
-name = "plaquette_scan"         # raw data goes to <dir>/<name>.csv
+name = "default"         # raw data goes to <dir>/<name>.csv

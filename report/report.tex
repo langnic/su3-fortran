@@ -52,10 +52,10 @@
 	bookmarksopenlevel=3,
 	plainpages=false,
 	pdfpagelabels=true,
-	pdftitle={A quenched QCD implementation using Fortran coarrays},
+	pdftitle={A pure-gauge implementation using Fortran coarrays},
 	pdfauthor={Nicolas Lang},
 	pdfsubject={Lab report},
-	pdfkeywords={QCD, Lattice, Fortran, Coarrays}
+	pdfkeywords={SU(3), Yang-Mills, Lattice, Fortran, Coarrays}
 ]{hyperref}
 
 \usepackage{listings}
@@ -131,7 +131,7 @@
 
 %\linenumbers
 
-\title*{A quenched QCD implementation using Fortran coarrays\\ }
+\title*{A pure-gauge implementation using Fortran coarrays\\ }
 \subtitle{Lab report - Projektpraktikum, M.Sc. Physik}
 % Use \titlerunning{Short Title} for an abbreviated version of
 % your contribution title if the original one is too long
@@ -148,17 +148,17 @@
 \maketitle
 
 
-\abstract{A Fortran implementation of quenched QCD using coarrays is presented. The use of derived types, object oriented features of Fortran 2008 and overloaded operators is shown to provide an easy-to-use API. An application to the implementation of the Metropolis algorithm is demonstrated. A sample measurement of the plaquette action using this program agrees with measurements found in literature.}
+\abstract{A Fortran implementation of SU(3) Yang-Mills theory using coarrays is presented. The use of derived types, object oriented features of Fortran 2008 and overloaded operators is shown to provide an easy-to-use API. An application to the implementation of the Metropolis algorithm is demonstrated. A sample measurement of the plaquette action using this program is close to measurements found in literature.}
 
 
 \section{Introduction} \label{sect:introduction}
-The evaluation of high-dimensional integrals using probabilistic methods such as Monte-Carlo integration is an essential task in lattice gauge theory. These simulations, carried out on 4-dimensional lattices, are typically computationally expensive. Parallelization and distribution of work across multiple worker nodes is therefore crucial as lattice sizes become larger. The coarray extension now included in the Fortran standard is a convenient tool to implement multi-processing capable applications with data exchange between processes. In this lab, the possibility of such an implementation for the purpose of simulating QCD has been explored. Special attention was given to the development of an easy-to-use API utilizing object-oriented features and operator syntax.
+The evaluation of high-dimensional integrals using probabilistic methods such as Monte-Carlo integration is an essential task in lattice gauge theory. These simulations, carried out on 4-dimensional lattices, are typically computationally expensive. Parallelization and distribution of work across multiple worker nodes is therefore crucial as lattice sizes become larger. The coarray extension now included in the Fortran standard is a convenient tool to implement multi-processing capable applications with data exchange between processes. In this lab, the possibility of such an implementation for the purpose of simulating SU(3) pure gauge theory has been explored. Special attention was given to the development of an easy-to-use API utilizing object-oriented features and operator syntax.
 
-Section 2 briefly discusses the theoretical background of QCD on the lattice. Section 3 introduces Fortran coarrays and describes the general design idea of the implementation. Section 4 discusses the technical details. In section 5, a sample measurement of the plaquette action is presented.
+Section 2 briefly discusses the theoretical background of SU(3) gauge theory on the lattice. Section 3 introduces Fortran coarrays and describes the general design idea of the implementation. Section 4 discusses the technical details. In section 5, a sample measurement of the plaquette action is presented.
 
-\section{Lattice QCD}
+\section{Lattice gauge theory}
 
-This section gives a brief introduction to the path integral on the lattice, the QCD action and the Metropolis algorithm. A detailed discussion can be found in \cite{gattringer}.
+This section gives a brief introduction to the path integral on the lattice, the gauge action and the Metropolis algorithm. A detailed discussion can be found in \cite{gattringer}.
 
 \subsection{Path integral quantization on the lattice}
 
@@ -186,9 +186,9 @@ i.e. the operator becomes a functional of the field variables and its expectatio
 %% TODO: Explain discretization in more detail, e.g. fermions on lattice sites, gluons on links
 
 
-\subsection{The QCD action}
+\subsection{The gauge action}
 
-This lab report discusses the implementation of the quenched approximation of quantum chromodynamics (QCD), i.e. QCD without dynamical quarks. Therefore only the gluon action will be discussed.
+This lab report discusses the implementation of pure SU(3) gauge theory (Yang-Mills theory), i.e. without quarks. Therefore only the gluon action will be discussed.
 The euclidean gluon action in the continuous case is given by
 \begin{equation}
 S_G[A] = \frac 1 {2g^2} \int d^4x \ \text{tr}[F_{\mu \nu}(x) F_{\mu \nu}(x)]
@@ -213,7 +213,7 @@ is called \emph{plaquette}. The plaquette represents the smallest non-trivial lo
 
 \subsection{Monte-Carlo integration and the Metropolis algorithm}
 
-In order to compute the vacuum expectation value of an operator $O$ of the QCD gauge field on a lattice, the integral
+In order to compute the vacuum expectation value of an operator $O$ of the SU(3) gauge field on a lattice, the integral
 \begin{equation}
 \langle O \rangle = \frac 1 Z \int \mathcal{D}[U] e^{-S_G[U]} O[U]
 \end{equation}
@@ -253,7 +253,7 @@ Configurations distributed according to this distribution density can be generat
 
 \section{Overview and general concept}
 
-After the physical background and general idea of lattice QCD has been introduced, the next sections will focus on the implementation of a QCD simulation in Fortran. Only the simpler case of static quarks (quenched approximation) has been implemented. The focus on the technical side lies on data parallelism leveraging Fortran coarrays. This section will discuss the general design ideas of the implementation.
+After the physical background and general idea of lattice gauge theory has been introduced, the next sections will focus on the implementation of a pure gauge simulation in Fortran. Quarks are not included. The focus on the technical side lies on data parallelism leveraging Fortran coarrays. This section will discuss the general design ideas of the implementation.
 
 \subsection{Fortran coarrays and shortcomings}
 Coarrays provide a way to distribute data across multiple program instances while retaining a concise syntax that abstracts the underlying inter-process or network communication. Formerly an extension of Fortran 95, coarrays are now part of the Fortran 2008 standard. Coarrays are variables with one or several \emph{codimensions} and indices referencing data stored by another program instance, called \emph{image}. \emph{Images} represent copies of the program that run asynchronously and can possess further independent local variables. The coarray entries can be accessed from every image by specifying the respective \emph{coindex} representing the image, where the data is stored. The size of the codimension is determined at runtime from the number of running images. The standard provides for additional methods that enable the user to obtain the number of images and the index of the current image and to introduce a break point to synchronize images. The coarray support in the GNU Fortran compiler is based on the \emph{OpenCoarrays} \cite{opencoarrays} library which in turn is based on the Message Passing Interface (MPI).
@@ -261,7 +261,7 @@ Coarrays provide a way to distribute data across multiple program instances whil
 The current implementation of coarrays in Fortran suffers from a number of shortcomings. Most notably, there is no notion of coarray pointers. This makes data encapsulation difficult. A new proposal called Coarray Fortran 2.0 \cite{coarr2.0} addresses this and other issues, but it is not clear whether and when it will become part of the Fortran standard. Therefore, work-arounds need to be found.
 
 \subsection{Design choices}
-The goal of this implementation of quenched QCD is to provide an easy-to-use API, where the actual storage and distribution of data across images is mainly hidden from the user. Types (classes) that offer a global view on fields and field variables will be implemented, i.e. operations will be performed on the field as a whole and not individual lattice sites. To work with operators depending on nearest neighbors, shift operators will be provided. To overcome limitations associated with coarrays, such as prohibited coarray return values, local versions of certain types will be used. The gauge field itself will be implemented as a wrapper around a global data variable (with the assumption that only ever one field instance will be needed).
+The goal of this implementation of SU(3) pure gauge theory is to provide an easy-to-use API, where the actual storage and distribution of data across images is mainly hidden from the user. Types (classes) that offer a global view on fields and field variables will be implemented, i.e. operations will be performed on the field as a whole and not individual lattice sites. To work with operators depending on nearest neighbors, shift operators will be provided. To overcome limitations associated with coarrays, such as prohibited coarray return values, local versions of certain types will be used. The gauge field itself will be implemented as a wrapper around a global data variable (with the assumption that only ever one field instance will be needed).
 
 
 \section{Implementation}
@@ -537,7 +537,7 @@ subroutine metro(u, eps, beta, acc)
 	call init_update_tab(100, s, eps)
 
     ! iterate over both parities and all directions
-    do p = 1,2
+    do p = 0,1
         do d = 1,4
 
         ! calc. staple
@@ -571,24 +571,48 @@ subroutine metro(u, eps, beta, acc)
 end subroutine metro
 \end{lstlisting}
 
-\section{Sample measurement}
+\section{Measurement}
+\label{sec:meas}
 
 This last section briefly presents a sample measurement of the plaquette expectation value as a proof of concept. Fig. \ref{fig:plot} shows the normalized plaquette action
 \begin{equation}
 E_P = \frac{\langle S_P \rangle} {6|\Lambda|} = \frac{1} {6|\Lambda| \cdot 3} \sum_{n \in \Lambda} \sum_{\mu < \nu} \Re\ \text{tr} [U_{\mu\nu}]
 \end{equation}
-plotted against $\beta$. The plot has been generated on a $16^4$ lattice, starting from a configuration of unit matrices, increasing $\beta$ in steps of 0.2 and using 100 equilibrating updates after every change, followed by 100 groups of two updates and one measurement. This amounts to a total of 12000 updates and 4000 measurements. The simulation ran on 4 cores of an Intel i7 2600k and took 4.41 hours to complete. The plot agrees with other measurements found in literature (e.g. in \cite{gattringer}).
+plotted against $\beta$. The plot has been generated on an $8^4$ lattice with 8 images, starting from a configuration of unit matrices and increasing $\beta$ from 0.2 to 8.0 in steps of 0.2. At every $\beta$, 200 thermalization sweeps were discarded, followed by 500 measurements taken every second sweep. The overall shape of the curve matches Fig.~4.2 in Chapter 4 of \cite{gattringer}, although a detailed quantitative comparison has not been performed. Errors were obtained with the gamma method \cite{wolff2004} (see addendum). Near $\beta \approx 5.5$ the autocorrelation time is large (see fig~\ref{fig:tau}) and the errors are correspondingly less reliable.
 
 \begin{figure}
 \centering
-\includegraphics[width=0.8\textwidth]{../plots/beta_scan_16x16.pdf}
-\caption{The plaquette action $E_P$ plotted against $\beta$ on a $16^4$ lattice. The data points represent the mean value and the error bars the standard deviation obtained from 100 measurements per value of $\beta$.}
+\includegraphics[width=0.8\textwidth]{plots/plaquette_vs_beta.pdf}
+\caption{The plaquette action $E_P$ plotted against $\beta$ on an $8^4$ lattice. The data points represent the mean value and the error bars the statistical error obtained from 500 measurements per value of $\beta$, corrected for autocorrelations. The leading-order analytical result from the strong-coupling limit is shown for comparison.}
 	\label{fig:plot}
 \end{figure}
 
+\emph{Note: this measurement was replaced with new data after the repository cleanup, with the error analysis now based on the $\Gamma$ method.}
+
 \section{Summary}
 
-In this lab, an implementation of the quenched approximation of QCD on the lattice using Fortran coarrays has been developed. The implemented API makes use of Fortran's object oriented features and overloaded operators and provides the user with easy-to-use types representing fields and field variables. Using these types an implementation of the Metropolis algorithm has been shown. A sample measurement of the plaquette action on a $16^4$ lattice terminated after 4.41 hours on an Intel i7 2600k using 4 cores performing 12000 update sweeps and 4000 measurements. The resulting plot showing a $\beta$-scan of the plaquette action agrees with measurements found in literature.
+In this lab, an implementation of SU(3) pure gauge theory on the lattice using Fortran coarrays has been developed. The implemented API makes use of Fortran's object oriented features and overloaded operators and provides the user with easy-to-use types representing fields and field variables. Using these types an implementation of the Metropolis algorithm has been shown. A sample $\beta$-scan of the plaquette action on an $8^4$ lattice (500 measurements per $\beta$) was performed; at $\beta = 6$ it is close to the literature value.
+
+\section*{Addendum: changes since the original report}
+\label{sect:addendum}
+A few mistakes in the main text were corrected and the measurement in section~\ref{sec:meas} was updated using improved error analysis.
+The following was added to the code after the original report, correcting some mistakes and adding a few features.
+\begin{itemize}
+	\item Run configuration via TOML file (lattice, $\epsilon$, $\beta$ scan, sampling, seed)
+	\item Raw measurements written to CSV (header with run parameters), no averaging in the Fortran code
+	\item Seeding: seed from clock or config, recorded in the output; independent stream per image
+	\item Re-unitarization of links every 10 sweeps; single precision
+	\item Bug-fix in the lattice decomposition module. Note that the image count must factor into patches dividing $n_z$, $n_t$.
+	\item Automated tests (Fortran, pytest) and Makefile targets
+	\item Python error analysis (gamma method \cite{wolff2004}, implemented in the pyerrors library \cite{pyerrors}): $\tau_\text{int}$, drift check, replicas, plots (Fig.~\ref{fig:tau})
+	\item Persistent known limitations: no multi-hit, fixed update table, slow modes near $\beta \approx 5.5$
+\end{itemize}
+\begin{figure}
+\centering
+\includegraphics[width=0.8\textwidth]{plots/tauint_vs_beta.pdf}
+\caption{Integrated autocorrelation time against $\beta$ for the run shown above.}
+\label{fig:tau}
+\end{figure}
 
 \pagebreak
 \printbibliography
